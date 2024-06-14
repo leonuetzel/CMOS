@@ -18,7 +18,7 @@ class NVIC
 			static constexpr uint32 c_priority_max = (1 << c_priorityBits) - 1;
 		#endif
 		
-		#if defined(CORTEX_M3)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4)
 			static constexpr uint32 c_priorityBits = 4;
 			static constexpr uint32 c_priority_max = (1 << c_priorityBits) - 1;
 		#endif
@@ -32,7 +32,7 @@ class NVIC
 		//	Number of Exceptions and Interrupts
 		static constexpr uint32 c_numberOfExceptions	= 16;
 		
-		#if defined(CORTEX_M7)
+		#if defined(CORTEX_M4) || defined(CORTEX_M7)
 			static constexpr uint32 c_numberOfInterrupts	= 240;
 		#endif
 		
@@ -75,14 +75,14 @@ class NVIC
 		inline bool isEnabled(uint16 interrupt);
 		inline bool isPending(uint16 interrupt);
 		
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			inline bool isActive(uint16 interrupt);
 		#endif
 		
 		inline uint32 set_basePriority(uint8 basePriority);
 		inline void enable_configurablePriorityExceptions();
 		inline void disable_configurablePriorityExceptions();
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			inline void enable_allExceptions();
 			inline void disable_allExceptions();
 		#endif
@@ -250,7 +250,7 @@ inline bool NVIC::isPending(uint16 interrupt)
 }
 
 
-#if defined(CORTEX_M3) || defined(CORTEX_M7)
+#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 inline bool NVIC::isActive(uint16 interrupt)
 {
 	if(interrupt < c_numberOfExceptions || interrupt >= c_numberOfExceptions + c_numberOfInterrupts)
@@ -313,7 +313,7 @@ inline void NVIC::disable_configurablePriorityExceptions()
 }
 
 
-#if defined(CORTEX_M3) || defined(CORTEX_M7)
+#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 	inline void NVIC::enable_allExceptions()
 	{
 		asm volatile("cpsie f");

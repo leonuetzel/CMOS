@@ -22,9 +22,11 @@ typedef uint32 feedback;
 
 
 
-#define EXCEPTION_VECTOR			__attribute__((section(".exceptionVector")))
-#define INTERRUPT_VECTOR			__attribute__((section(".interruptVector")))
-#define CODE_RAM							__attribute__((section(".code_ram")))
+#define EXCEPTION_VECTOR				__attribute__((section(".exceptionVector")))
+#define INTERRUPT_VECTOR				__attribute__((section(".interruptVector")))
+#define CODE_RAM								__attribute__((section(".code_ram")))
+#define PREINIT_FUNCTION_ARRAY	__attribute__((section(".preInitFunctionArray")))
+#define CODE_RESET							__attribute__((section(".code_reset")))
 
 
 

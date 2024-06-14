@@ -112,6 +112,8 @@ class String: public Array<char>
 		template<typename dataType>
 		inline String& operator+=(const dataType& data);
 		
+		bool operator<(const char* string) const;
+		bool operator<(const String& string) const;
 		bool operator==(const String& string) const;
 		bool operator==(const char* string) const;
 		bool operator!=(const String& string) const;

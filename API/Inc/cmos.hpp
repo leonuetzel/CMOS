@@ -24,7 +24,6 @@
 #include "i_can.hpp"
 #include "i_crc.hpp"
 #include "i_dma.hpp"
-#include "i_i2c.hpp"
 #include "i_nvm.hpp"
 #include "i_semaphore.hpp"
 #include "i_serial.hpp"
@@ -32,8 +31,9 @@
 
 
 //	Hardware Modules Design
-#include "uart.hpp"
 #include "canFrame.hpp"
+#include "i2c.hpp"
+#include "uart.hpp"
 
 
 //	Software DMA
@@ -87,6 +87,7 @@
 #include "icd/24lc02b.hpp"
 #include "icd/mb85rc16.hpp"
 #include "icd/mcp23016.hpp"
+#include "icd/stc3100.hpp"
 
 
 
@@ -109,6 +110,15 @@
 	#include "scb.hpp"
 	#include "nvic.hpp"
 	#include "systick.hpp"
+	#include "semaphoreExclusive.hpp"
+#endif
+
+#if defined(CORTEX_M4)
+	#include "scb.hpp"
+	#include "nvic.hpp"
+	#include "fpu.hpp"
+	#include "systick.hpp"
+	#include "mpu.hpp"
 	#include "semaphoreExclusive.hpp"
 #endif
 
@@ -135,23 +145,24 @@ class CMOS
 		
 		
 		//	ID for invalid Thread Handle
-		static constexpr uint8 c_threadID_invalid					= 0xFF;
+		static constexpr uint8 threadID_invalid					= 0xFF;
+		static constexpr uint16 eventID_invalid					= 0xFFFF;
 		
 		
 		//	Systick Clock for Sleep Functions
-		#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3)
-			static constexpr uint32 c_clock_systick					= 10000;
+		#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
+			static constexpr uint32 c_clock_systick				= 10000;
 		#endif
 		
 		#if defined(CORTEX_M7)
-			static constexpr uint32 c_clock_systick					= 100000;
+			static constexpr uint32 c_clock_systick				= 100000;
 		#endif
 		
 		
 		//	Maximum Sleep Durations
-		static constexpr uint32 c_sleepTime_us_max				= (0xFFFFFFFF / c_clock_systick) * 1000000;
-		static constexpr uint32 c_sleepTime_ms_max				= (0xFFFFFFFF / c_clock_systick) * 1000;
-		static constexpr uint32 c_sleepTime_sec_max				=  0xFFFFFFFF / c_clock_systick;
+		static constexpr uint32 c_sleepTime_us_max			= (0xFFFFFFFF / c_clock_systick) * 1000000;
+		static constexpr uint32 c_sleepTime_ms_max			= (0xFFFFFFFF / c_clock_systick) * 1000;
+		static constexpr uint32 c_sleepTime_sec_max			=  0xFFFFFFFF / c_clock_systick;
 		
 		
 		
@@ -160,7 +171,7 @@ class CMOS
 	private:
 		
 		//	Logging
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			float m_load_cpu;
 			float m_load_stack_reservedAndUsed;
 			float m_load_stack_reservedAndUnused;
@@ -190,6 +201,15 @@ class CMOS
 			SemaphoreExclusive m_semaphoreExclusive;
 		#endif
 		
+		#if defined(CORTEX_M4)
+			SCB m_scb;
+			NVIC m_nvic;
+			FPU m_fpu;
+			Systick m_systick;
+			MPU m_mpu;
+			SemaphoreExclusive m_semaphoreExclusive;
+		#endif
+		
 		#if defined(CORTEX_M7)
 			SCB m_scb;
 			NVIC m_nvic;
@@ -214,6 +234,7 @@ class CMOS
 		uint8 m_semaphore;
 		uint32 m_semaphoreCounter;
 		UniquePairArray<const void*, uint8> m_semaphoresUser;
+		Array<UniqueArray<uint8>> m_events;
 		
 		
 		//	Constructors - Destructors
@@ -226,12 +247,12 @@ class CMOS
 		void lockSemaphore();
 		feedback unlockSemaphore();
 		
-		void contextSwitch(bool isInterrupt = false);
+		void contextSwitch();
 		static void thread_terminateOnReturn();
 		feedback thread_terminate(uint8 thread_ID, bool hardShutdown);
 		feedback send_mail(uint8 senderID, uint8 receiverID, Thread::e_mailType mailType, uint32 data);
 		
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			friend void EXCEPTION_MEMORY_MANAGEMENT_FAULT();
 			friend void EXCEPTION_BUS_FAULT();
 			friend void EXCEPTION_USAGE_FAULT();
@@ -276,13 +297,14 @@ class CMOS
 		void thread_setPriority(uint8 newPriority);
 		feedback thread_joinChildThread(uint8 threadID, uint32 sleepTime_ms = 1);
 		feedback thread_detachChildThread(uint8 threadID);
-		feedback thread_shutdownChildThread(uint8 threadID, bool hardShutdown = false);
+		feedback thread_shutdown(uint8 threadID, bool hardShutdown = false);
 		constexpr inline bool thread_doesExist(const String& name) const;
 		constexpr inline bool thread_doesExist(uint8 threadID) const;
 		constexpr inline bool isChildThread(uint8 threadID) const;
 		constexpr inline uint8 get_runningThreadID() const;
 		constexpr inline uint8 get_parentThreadID() const;
 		inline String thread_getName(uint8 threadID) const;
+		inline uint8 thread_getID(const String& name) const;
 		constexpr inline uint8 get_numberOfThreadsMaximum() const;
 		constexpr inline bool isValid_threadID(uint8 threadID) const;
 		static constexpr inline void invalidate(uint8& threadID);
@@ -290,8 +312,9 @@ class CMOS
 		
 		//	Sleep Functions
 		inline void sleep();
-		inline void sleep_until_mail(uint8 senderID);
-		inline void sleep_until_ISR(uint16 isr);
+		uint16 sleep_untilEvent();
+		feedback sleep_untilEvent(uint16 eventID);
+		void sleep_untilMail(uint8 senderID);
 		#if defined(CORTEX_M7)
 			inline void sleep_100us(uint32 units_of_100us);
 		#endif
@@ -299,13 +322,13 @@ class CMOS
 		inline void sleep_sec(uint32 seconds);
 		
 		
-		//	Interrupt-History, only for use from an Interrupt or Exception to notify and/or wakeup Thread
-		feedback notifyAboutInterruptOrException(uint8 thread_ID);
-		
-		
-		//	Interrupt-History clearing
-		inline void clearInterruptHistory();
-		inline feedback clearInterruptHistory(uint16 isr);
+		//	Events
+		uint16 event_create();
+		feedback event_emit(uint16 eventID);
+		feedback event_listen(uint16 eventID);
+		feedback event_subscribe(uint16 eventID);
+		feedback event_unsubscribe();
+		feedback event_unsubscribe(uint16 eventID);
 		
 		
 		//	Mailbox, only for use from outside an Interrupt or Exception
@@ -328,7 +351,7 @@ class CMOS
 		
 		
 		//	Load Measurements
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			constexpr inline double thread_get_cpuLoad(uint8 thread_ID) const;
 			constexpr inline double thread_get_stackLoad(uint8 thread_ID) const;
 			
@@ -345,7 +368,7 @@ class CMOS
 		
 		
 		// Tick Counter with one Tick equal to a Period of c_clock_systick
-		constexpr inline const uint64& get_ticks() const;
+		constexpr inline volatile uint64& get_ticks();
 		
 		
 		//	Getter for Hardware Modules
@@ -358,6 +381,10 @@ class CMOS
 		#endif
 		
 		#if defined(CORTEX_M3)
+			constexpr inline NVIC& get_nvic();
+		#endif
+		
+		#if defined(CORTEX_M4)
 			constexpr inline NVIC& get_nvic();
 		#endif
 		
@@ -474,7 +501,7 @@ constexpr inline bool CMOS::isChildThread(uint8 threadID) const
 	{
 		return(false);
 	}
-	if(thread.m_parent_ID != m_runningThreadID)
+	if(thread.m_parentID != m_runningThreadID)
 	{
 		return(false);
 	}
@@ -490,7 +517,7 @@ constexpr inline uint8 CMOS::get_runningThreadID() const
 
 constexpr inline uint8 CMOS::get_parentThreadID() const
 {
-	return(m_thread(m_runningThreadID).m_parent_ID);
+	return(m_thread(m_runningThreadID).m_parentID);
 }
 
 
@@ -502,6 +529,23 @@ inline String CMOS::thread_getName(uint8 threadID) const
 		name = m_thread(threadID).m_name;
 	}
 	return(name);
+}
+
+
+inline uint8 CMOS::thread_getID(const String& name) const
+{
+	for(uint8 i = 0; i < c_numberOfThreads; i++)
+	{
+		const Thread& thread(m_thread[i]);
+		if(thread.is_valid() == true)
+		{
+			if(thread.m_name == name)
+			{
+				return(i);
+			}
+		}
+	}
+	return(threadID_invalid);
 }
 
 
@@ -523,7 +567,7 @@ constexpr inline bool CMOS::isValid_threadID(uint8 threadID) const
 
 constexpr inline void CMOS::invalidate(uint8& threadID)
 {
-	threadID = c_threadID_invalid;
+	threadID = threadID_invalid;
 }
 
 
@@ -535,25 +579,7 @@ constexpr inline void CMOS::invalidate(uint8& threadID)
 inline void CMOS::sleep()
 {
 	//	Sleep until anything happens
-	sleep_until_mail(m_runningThreadID);
-}
-
-
-inline void CMOS::sleep_until_mail(uint8 senderID)
-{
-	if(senderID == c_threadID_invalid)
-	{
-		return;
-	}
-	m_thread[m_runningThreadID].m_wakeUpMailSender = senderID;
-	contextSwitch();
-}
-
-
-inline void CMOS::sleep_until_ISR(uint16 isr)
-{
-	m_thread[m_runningThreadID].m_wakeUpInterruptID = isr;
-	contextSwitch();
+	sleep_untilMail(m_runningThreadID);
 }
 
 
@@ -582,7 +608,7 @@ inline void CMOS::sleep_ms(uint32 ms)
 	#if defined(CORTEX_M7)
 		sleep_100us(10 * ms);
 	#endif
-	#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3)
+	#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
 		m_thread[m_runningThreadID].m_sleepTime = (c_clock_systick / 1000) * ms;
 		contextSwitch();
 	#endif
@@ -598,36 +624,9 @@ inline void CMOS::sleep_sec(uint32 seconds)
 	#if defined(CORTEX_M7)
 		sleep_100us(10000 * seconds);
 	#endif
-	#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3)
+	#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
 		sleep_ms(1000 * seconds);
 	#endif
-}
-
-
-
-
-
-
-
-inline void CMOS::clearInterruptHistory()
-{
-	Thread& thread = m_thread[m_runningThreadID];
-	for(auto& i: thread.m_wakeUpInterruptHistory)
-	{
-		i = 0;
-	}
-}
-
-
-inline feedback CMOS::clearInterruptHistory(uint16 isr)
-{
-	if(isr >= NVIC::c_numberOfInterrupts)
-	{
-		return(FAIL);
-	}
-	Thread& thread = m_thread[m_runningThreadID];
-	bit::clear(thread.m_wakeUpInterruptHistory[isr / 8], isr & 0x07);
-	return(OK);
 }
 
 
@@ -671,7 +670,7 @@ inline bool CMOS::semaphore_isOwnedByRunningThread(const void* semaphore) const
 
 inline bool CMOS::semaphore_isLocked(const void* semaphore) const
 {
-	if(semaphore_getOwner(semaphore) == c_threadID_invalid)
+	if(semaphore_getOwner(semaphore) == threadID_invalid)
 	{
 		return(false);
 	}
@@ -684,7 +683,7 @@ inline bool CMOS::semaphore_isLocked(const void* semaphore) const
 
 
 
-#if defined(CORTEX_M3) || defined(CORTEX_M7)
+#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 	constexpr inline double CMOS::thread_get_cpuLoad(uint8 thread_ID) const
 	{
 		if(isValid_threadID(thread_ID))
@@ -717,7 +716,7 @@ inline feedback CMOS::set_systemClock(uint32 clock)
 }
 
 
-constexpr inline const uint64& CMOS::get_ticks() const
+constexpr inline volatile uint64& CMOS::get_ticks()
 {
 	return(m_ticks);
 }
@@ -751,7 +750,7 @@ inline uint32 CMOS::get_id_core() const
 }
 
 
-#if defined(CORTEX_M3) || defined(CORTEX_M7)
+#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 	constexpr inline float CMOS::get_load_cpu() const
 	{
 		return(m_load_cpu);

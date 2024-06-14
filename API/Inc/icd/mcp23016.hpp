@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "../i_i2c.hpp"
+#include "../i2c.hpp"
 
 
 
@@ -42,7 +42,7 @@ namespace ICD
 			
 			
 			//	Non-static Member
-			I_I2C& m_i2c;
+			I2C& m_i2c;
 			uint8 slaveAddressCustomized;
 			
 			
@@ -64,7 +64,7 @@ namespace ICD
 			
 		public:
 			
-			MCP23016(I_I2C& i2c, bool a2 = false, bool a1 = false, bool a0 = false);
+			MCP23016(I2C& i2c, bool a2 = false, bool a1 = false, bool a0 = false);
 			MCP23016(const MCP23016& mcp23016) = delete;
 			~MCP23016();
 			

@@ -38,8 +38,7 @@ class I_DisplayDriver
 		
 	public:
 		
-		virtual feedback set_thread()																							= 0;
-		virtual uint16 get_wakeUpInterrupt()																			= 0;
+		virtual uint16 get_eventID_frameFinished()																= 0;
 		
 		virtual feedback start()																									= 0;
 		virtual feedback stop()																										= 0;

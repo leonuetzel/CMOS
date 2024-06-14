@@ -63,27 +63,43 @@ class Thread
 		
 		
 		//	Highest possible Address of Stackpointer of this Thread
-		uint32* m_stack_highestAddress;
+		uint32* m_stackHighestAddress;
 		
 		
 		//	Current Stackpointer after a Preemption
-		uint32* m_stack_pointer;
+		uint32* m_stackPointer;
 		
 		
-		//	Remaining Sleep Time in Periods of CMOS::c_clock_systick, 0 means no sleep is requested
+		//	Remaining Sleep Time in Periods of CMOS::c_clock_systick
+		//	Set to 0 if Thread is ready to be executed
 		uint32 m_sleepTime;
 		
 		
 		//	Stack Size
-		uint16 m_stack_size;
+		uint16 m_stackSize;
 		
 		
-		//	Interrupt ID that is allowed to wake up this Thread
-		uint16 m_wakeUpInterruptID;
+		//	Event ID that is allowed to wake up this Thread
+		//	Set to 0xFFFF if Thread is ready to be executed
+		//	Set to 0xFFFE if Thread is waiting for any subscripted Event to wake it up
+		uint16 m_wakeUpEventID;
+		
+		
+		//	Event ID that woke the Thread up
+		uint16 m_triggeredWakeUpEventID;
+		
+		
+		//	Event ID that is monitored
+		//	Use Case:	A Mechanism is triggered that leads to an Event to be emitted
+		//						but the Event is emitted before the Thread that triggered the Mechanism
+		//						has gone to sleep. This leads to the Thread sleeping forever just because
+		//						the Event occured "too fast".
+		uint16 m_listeningEventID;
+		bool m_listeningEventOccured;
 		
 		
 		//	Parent Thread ID
-		uint8 m_parent_ID;
+		uint8 m_parentID;
 		
 		
 		//	This Threads Priority
@@ -99,12 +115,8 @@ class Thread
 		RingbufferDynamic<s_mail> m_mailBox;
 		
 		
-		//	Bit-Array, where Interrupts can mark that they wanted to wake up this Thread
-		uint8 m_wakeUpInterruptHistory[(NVIC::c_numberOfExceptions + NVIC::c_numberOfInterrupts) / 8 + (((NVIC::c_numberOfExceptions + NVIC::c_numberOfInterrupts) % 8 == 0) ? 0: 1)];
-		
-		
 		//	Statistics
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			uint32 m_ticks;
 			float m_cpuLoad;
 			float m_stackLoad;
@@ -150,17 +162,19 @@ class Thread
 
 inline Thread::Thread()
 	:	m_name(),
-		m_stack_highestAddress(nullptr),
-		m_stack_pointer(nullptr),
+		m_stackHighestAddress(nullptr),
+		m_stackPointer(nullptr),
 		m_sleepTime(0),
-		m_stack_size(0),
-		m_wakeUpInterruptID(0),
-		m_parent_ID(0),
+		m_stackSize(0),
+		m_wakeUpEventID(0xFFFF),
+		m_triggeredWakeUpEventID(0xFFFF),
+		m_listeningEventID(0xFFFF),
+		m_listeningEventOccured(false),
+		m_parentID(0),
 		m_priority(0),
 		m_wakeUpMailSender(0),
-		m_mailBox(0),
-		m_wakeUpInterruptHistory()
-		#if defined(CORTEX_M3) || defined(CORTEX_M7)
+		m_mailBox(0)
+		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			,
 			m_ticks(0),
 			m_cpuLoad(0),
@@ -222,7 +236,7 @@ inline Thread& Thread::operator=(const Thread& thread)
 
 constexpr inline bool Thread::is_valid() const
 {
-	if(m_stack_pointer != nullptr && m_stack_highestAddress != nullptr)
+	if(m_stackPointer != nullptr && m_stackHighestAddress != nullptr)
 	{
 		return(true);
 	}

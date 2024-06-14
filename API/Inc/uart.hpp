@@ -7,7 +7,7 @@
 
 
 
-class UART : public I_Serial<uint8>
+class UART: public I_Serial<uint8>
 {
 	public:
 		
@@ -64,13 +64,13 @@ class UART : public I_Serial<uint8>
 		
 	protected:
 		
-		constexpr inline UART(uint16 interruptID, void* txDataRegister);
+		UART(void* txDataRegister);
 		UART(const UART& uart) = delete;
 		inline ~UART();
 		
 		bool m_initialized;
 		RingbufferExternal<uint8> m_txBuffer;
-		const uint16 m_interruptID;
+		const uint16 m_eventID_dataReceived;
 		I_DMA* m_dma_tx;
 		const void* m_txDataRegister;
 		
@@ -136,19 +136,6 @@ class UART : public I_Serial<uint8>
 /*****************************************************************************/
 /*                      					Protected	  			 						 						 */
 /*****************************************************************************/
-
-constexpr inline UART::UART(uint16 interruptID, void* txDataRegister)
-	:	I_Serial<uint8>(),
-		
-		m_initialized(false),
-		m_txBuffer(nullptr, 0),
-		m_interruptID(interruptID),
-		m_dma_tx(nullptr),
-		m_txDataRegister(txDataRegister)
-{
-	
-}
-
 
 inline UART::~UART()
 {

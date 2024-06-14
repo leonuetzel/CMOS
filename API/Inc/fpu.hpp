@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(CORTEX_M7)
+#if defined(CORTEX_M4) || defined(CORTEX_M7)
 	#include "defines.hpp"
 	#include "peripherals.hpp"
 	

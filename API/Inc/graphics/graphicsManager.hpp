@@ -135,7 +135,7 @@ constexpr inline Graphics::Graphics()
 		m_graphicAccelerator(nullptr),
 		
 		m_initialized(false),
-		m_thread_ID(CMOS::c_threadID_invalid),
+		m_thread_ID(CMOS::threadID_invalid),
 		
 		m_elements(),
 		m_fps(0),

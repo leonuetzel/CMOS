@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "../i_i2c.hpp"
+#include "../i2c.hpp"
 
 
 
@@ -26,7 +26,7 @@ namespace ICD
 			
 			
 			//	Non-static Member
-			I_I2C& m_i2c;
+			I2C& m_i2c;
 			
 			
 			//	Constructor and Destructor
@@ -46,7 +46,7 @@ namespace ICD
 			
 		public:
 			
-			EEPROM_24LC02B(I_I2C& i2c);
+			EEPROM_24LC02B(I2C& i2c);
 			EEPROM_24LC02B(const EEPROM_24LC02B& eeprom_24LC02B) = delete;
 			~EEPROM_24LC02B();
 			

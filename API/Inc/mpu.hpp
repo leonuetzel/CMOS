@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(CORTEX_M0P) || defined(CORTEX_M7)
+#if defined(CORTEX_M0P) || defined(CORTEX_M4) || defined(CORTEX_M7)
 	#include "defines.hpp"
 	
 	
@@ -11,7 +11,7 @@
 	{
 		public:
 			
-			#if defined(CORTEX_M0P)
+			#if defined(CORTEX_M0P) || defined(CORTEX_M4)
 				static constexpr uint32 c_numberOfRegions = 8;
 			#endif
 			#if defined(CORTEX_M7)
@@ -20,7 +20,7 @@
 			
 			enum class e_size
 			{
-				#if defined(CORTEX_M7)
+				#if defined(CORTEX_M4) || defined(CORTEX_M7)
 					_32B			= 5,
 					_64B			= 6,
 					_128B			= 7,
@@ -70,7 +70,7 @@
 				NORMAL_SHAREABLE_WT					= 0x06,
 				NORMAL_NOTSHAREABLE_WB			= 0x03,
 				NORMAL_SHAREABLE_WB					= 0x07
-				#if defined(CORTEX_M7)
+				#if defined(CORTEX_M4) || defined(CORTEX_M7)
 					,
 					NORMAL_NOTSHAREABLE_NONE		= 0x08,
 					NORMAL_SHAREABLE_NONE				= 0x0C,

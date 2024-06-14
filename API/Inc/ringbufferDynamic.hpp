@@ -32,7 +32,7 @@ class RingbufferDynamic: public I_Ringbuffer<dataType>
 		
 	public:
 		
-		inline RingbufferDynamic(uint32 size, dataType defaultValue = dataType());
+		inline RingbufferDynamic(uint32 size = 0, dataType defaultValue = dataType());
 		inline ~RingbufferDynamic() override;
 		
 		feedback set_size(uint32 size);

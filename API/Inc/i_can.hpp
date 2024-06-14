@@ -19,7 +19,11 @@ class I_CAN
 			BIT_RECESSIVE							= 0x4,
 			BIT_DOMINANT							= 0x5,
 			CRC												= 0x6,
-			SET_BY_SOFTWARE						= 0x7
+			SET_BY_SOFTWARE						= 0x7,
+			
+			RX_FIFO_OVERFLOW					= 0xFD,
+			TX_RINGBUFFER_OVERFLOW		= 0xFE,
+			RX_RINGBUFFER_OVERFLOW		= 0xFF
 		};
 		
 		enum class e_state: uint8
@@ -52,12 +56,13 @@ class I_CAN
 		
 	public:
 		
-		virtual I_CAN& operator<<(const CAN_Frame& packet) = 0;
-		virtual I_CAN& operator>>(CAN_Frame*& packet) = 0;
+		virtual I_CAN& operator<<(const CAN_Frame& canFrame) = 0;
+		virtual I_CAN& operator>>(CAN_Frame& canFrame) = 0;
 		
 		virtual uint32 get_numberOfUnread() const = 0;
 		virtual bool is_dataAvailable() const = 0;
 		
+		virtual uint16 get_eventID() = 0;
 		virtual e_state get_state() = 0;
 		virtual const UniqueArray<e_error>& get_errors() const = 0;
 		virtual void clearErrors() = 0;
