@@ -58,6 +58,11 @@ class String: public Array<char>
 		inline ~String();
 		
 		
+		//	Hexadecimal
+		void from_hex(uint32 number, uint32 minimumDigits = c_invalid, bool prefix = true);
+		void from_hex(uint64 number, uint32 minimumDigits = c_invalid, bool prefix = true);
+		
+		
 		//	Getter
 		const char* get_string() const;
 		

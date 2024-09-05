@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "../i2c.hpp"
+#include "../i_i2c.hpp"
 
 
 
@@ -85,7 +85,7 @@ namespace ICD
 			
 			
 			//	Non-static Member
-			I2C& m_i2c;
+			I_I2C& m_i2c;
 			I_CRC& m_crc;
 			const float m_shuntResistance;
 			uint8 m_ID[8];
@@ -108,7 +108,7 @@ namespace ICD
 			
 		public:
 			
-			STC3100(I2C& i2c, I_CRC& crc, float shuntResistance);
+			STC3100(I_I2C& i2c, I_CRC& crc, float shuntResistance);
 			STC3100(const STC3100& stc3100) = delete;
 			~STC3100();
 			

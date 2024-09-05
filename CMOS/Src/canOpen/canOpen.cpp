@@ -47,8 +47,10 @@ namespace canOpen
 			while(m_can.is_dataAvailable() == true)
 			{
 				CAN_Frame canFrame;
-				m_can >> canFrame;
-				handlePacket(canFrame);
+				if(m_can.rx(canFrame) == OK)
+				{
+					handlePacket(canFrame);
+				}
 			}
 		}
 	}

@@ -3,6 +3,7 @@
 
 
 
+
 namespace ICD
 {
 	/*****************************************************************************/
@@ -30,20 +31,22 @@ namespace ICD
 		}
 		
 		
-		//	Transmit Register Address
-		if(m_i2c.start(slaveAddress, true) != OK)
+		//	Send Start Condition
+		if(m_i2c.start(slaveAddress, true, 1) != OK)
 		{
 			return(data);
 		}
-		m_i2c << (uint8) address;
-		if(m_i2c.tx() != OK)
+		
+		
+		//	Transmit Register Address
+		if(m_i2c.tx((uint8) address) != OK)
 		{
 			return(data);
 		}
 		
 		
 		//	Readout Registers
-		if(m_i2c.start(slaveAddress, false) != OK)
+		if(m_i2c.start(slaveAddress, false, numberOfRegisters) != OK)
 		{
 			return(data);
 		}
@@ -64,21 +67,29 @@ namespace ICD
 		}
 		
 		
-		//	Transmit Register Address
-		if(m_i2c.start(slaveAddress, true) != OK)
-		{
-			return(FAIL);
-		}
-		m_i2c << (uint8) address;
-		if(m_i2c.tx() != OK)
+		//	Send Start Condition
+		if(m_i2c.start(slaveAddress, true, 2) != OK)
 		{
 			return(FAIL);
 		}
 		
 		
-		//	Write Register Data
-		m_i2c << data;
-		return(m_i2c.tx());
+		//	Write Register Address
+		if(m_i2c.tx((uint8) address) != OK)
+		{
+			return(FAIL);
+		}
+		
+		
+		//	Write Registers
+		for(uint32 i = 0; i < numberOfRegisters; i++)
+		{
+			if(m_i2c.tx(data[i]) != OK)
+			{
+				return(FAIL);
+			}
+		}
+		return(OK);
 	}
 	
 	
@@ -87,7 +98,7 @@ namespace ICD
 	/*                      						Public	  			 						 						 */
 	/*****************************************************************************/
 	
-	STC3100::STC3100(I2C& i2c, I_CRC& crc, float shuntResistance)
+	STC3100::STC3100(I_I2C& i2c, I_CRC& crc, float shuntResistance)
 		:	m_i2c(i2c),
 			m_crc(crc),
 			m_shuntResistance(shuntResistance)

@@ -255,7 +255,7 @@ namespace canOpen
 								
 								
 								//	Send CAN Frame
-								m_can << canFrameResponse;
+								m_can.tx(canFrameResponse);
 							}
 							else
 							{
@@ -328,7 +328,7 @@ namespace canOpen
 								
 								
 								//	Send CAN Frame
-								m_can << canFrameResponse;
+								m_can.tx(canFrameResponse);
 							}
 						}
 						else
@@ -399,7 +399,13 @@ namespace canOpen
 		
 		
 		//	Send CAN Frame
-		m_can << canFrame;
+		if(m_can.tx(canFrame) != OK)
+		{
+			//	Remove the 's_transfer' Struct from the Transfer Queue
+			m_transfers.erase(m_transfers.find(&transfer));
+			
+			return(Array<uint8>());
+		}
 		
 		
 		//	Wait for Transfer to be finished
@@ -475,7 +481,13 @@ namespace canOpen
 			
 			
 			//	Send CAN Frame
-			m_can << canFrame;
+			if(m_can.tx(canFrame) != OK)
+			{
+				//	Remove the 's_transfer' Struct from the Transfer Queue
+				m_transfers.erase(m_transfers.find(&transfer));
+				
+				return(FAIL);
+			}
 			
 			
 			//	Wait for Transfer to be finished

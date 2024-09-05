@@ -2,7 +2,6 @@
 
 #include "defines.hpp"
 #include "i_ringbuffer.hpp"
-#include "array.hpp"
 
 
 
@@ -32,7 +31,6 @@ class RingbufferExternal: public I_Ringbuffer<dataType>
 		uint32 m_size;
 		uint32 m_head;
 		uint32 m_tail;
-		Buffer::e_state m_state;
 		
 		
 		
@@ -46,10 +44,11 @@ class RingbufferExternal: public I_Ringbuffer<dataType>
 		feedback write(const dataType& data) override;
 		dataType read() override;
 		inline void clear() override;
+		inline void reset() override;
 		
-		inline bool is_dataAvailable() const override;
 		uint32 get_numberOfUnread() const override;
-		inline Buffer::e_state get_state() const override;
+		inline bool is_empty() const override;
+		inline bool is_full() const override;
 		inline uint32 get_size() const override;
 		inline bool is_valid() const override;
 		
@@ -92,8 +91,7 @@ constexpr inline RingbufferExternal<dataType>::RingbufferExternal(dataType* buff
 	:	m_data(buffer),
 		m_size(size),
 		m_head(0),
-		m_tail(0),
-		m_state(Buffer::e_state::EMPTY)
+		m_tail(0)
 {
 	if(size == 0 || m_data == nullptr)
 	{
@@ -118,22 +116,21 @@ inline RingbufferExternal<dataType>::~RingbufferExternal()
 template<typename dataType>
 CODE_RAM feedback RingbufferExternal<dataType>::write(const dataType& data)
 {
-	if(m_state == Buffer::e_state::FULL || m_size == 0 || m_data == nullptr)
+	//	Sanity Check
+	if(is_full() == true || m_size == 0 || m_data == nullptr)
 	{
 		return(FAIL);
 	}
 	
+	
+	//	Write Data
 	m_data[m_head] = data;
 	
+	
+	//	Increment Head with Wrap-Around
 	m_head = (m_head + 1) % m_size;
-	if(m_head == m_tail)
-	{
-		m_state = Buffer::e_state::FULL;
-	}
-	else
-	{
-		m_state = Buffer::e_state::NORMAL;
-	}
+	
+	
 	return(OK);
 }
 
@@ -142,25 +139,20 @@ template<typename dataType>
 CODE_RAM dataType RingbufferExternal<dataType>::read()
 {
 	dataType data = dataType();
-	if(m_size == 0 || m_data == nullptr)
+	if(m_size == 0 || m_data == nullptr || is_empty() == true)
 	{
 		return(data);
 	}
 	
-	if(get_numberOfUnread() > 0)
-	{
-		data = m_data[m_tail];
-		
-		m_tail = (m_tail + 1) % m_size;
-		if(m_tail == m_head)
-		{
-			m_state = Buffer::e_state::EMPTY;
-		}
-		else
-		{
-			m_state = Buffer::e_state::NORMAL;
-		}
-	}
+	
+	//	Read Data
+	data = m_data[m_tail];
+	
+	
+	//	Increment Tail with Wrap-Around
+	m_tail = (m_tail + 1) % m_size;
+	
+	
 	return(data);
 }
 
@@ -168,46 +160,39 @@ CODE_RAM dataType RingbufferExternal<dataType>::read()
 template<typename dataType>
 inline void RingbufferExternal<dataType>::clear()
 {
-	m_head = 0;
-	m_tail = 0;
-	m_state = Buffer::e_state::EMPTY;
+	m_tail = m_head;
 }
-
-
-
-
-
 
 
 template<typename dataType>
-inline bool RingbufferExternal<dataType>::is_dataAvailable() const
+inline void RingbufferExternal<dataType>::reset()
 {
-	if(m_state == Buffer::e_state::EMPTY || m_size == 0 || m_data == nullptr)
-	{
-		return(false);
-	}
-	return(true);
+	m_head = 0;
+	m_tail = 0;
 }
+
+
+
+
+
 
 
 template<typename dataType>
 CODE_RAM uint32 RingbufferExternal<dataType>::get_numberOfUnread() const
 {
-	if(m_size == 0 || m_data == nullptr)
+	if(m_size == 0 || m_data == nullptr || is_empty() == true)
 	{
 		return(0);
 	}
 	
-	if(m_state == Buffer::e_state::FULL)
+	if(is_full() == true)
 	{
-		return(m_size);
-	}
-	if(m_state == Buffer::e_state::EMPTY)
-	{
-		return(0);
+		return(m_size - 1);
 	}
 	
-	uint64 size = m_size - m_tail;
+	
+	//	Calculate Number of Unread Data
+	uint32 size = m_size - m_tail;
 	size += m_head;
 	if(size > m_size)
 	{
@@ -218,15 +203,39 @@ CODE_RAM uint32 RingbufferExternal<dataType>::get_numberOfUnread() const
 
 
 template<typename dataType>
-inline Buffer::e_state RingbufferExternal<dataType>::get_state() const
+inline bool RingbufferExternal<dataType>::is_empty() const
 {
-	return(m_state);
+	if(m_head == m_tail)
+	{
+		return(true);
+	}
+	return(false);
 }
+
+
+template<typename dataType>
+inline bool RingbufferExternal<dataType>::is_full() const
+{
+	//	Add 1 to Head with Wrap-Around
+	uint32 head = m_head + 1;
+	if(head == m_size)
+	{
+		head = 0;
+	}
+	
+	
+	if(head == m_tail)
+	{
+		return(true);
+	}
+	return(false);
+}
+
 
 template<typename dataType>
 inline uint32 RingbufferExternal<dataType>::get_size() const
 {
-	return(m_size);
+	return(m_size - 1);
 }
 
 
@@ -249,15 +258,15 @@ inline bool RingbufferExternal<dataType>::is_valid() const
 template<typename dataType>
 bool RingbufferExternal<dataType>::contains(const dataType& data) const
 {
-	if(m_size == 0 || m_data == nullptr)
+	if(m_size < 2 || m_data == nullptr)
 	{
 		return(false);
 	}
 	
-	uint32 numberOfData = get_numberOfUnread();
+	const uint32 numberOfData = get_numberOfUnread();
 	for(uint32 i = 0; i < numberOfData; i++)
 	{
-		uint32 index = (((uint64) m_tail) + i) % m_size;
+		const uint32 index = (((uint64) m_tail) + i) % m_size;
 		if(m_data[index] == data)
 		{
 			return(true);

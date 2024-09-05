@@ -29,22 +29,21 @@ namespace ICD
 		
 		//	Write Base Address and upper 3 Bits of Memory Address
 		const uint8 addressAssembled = slaveAddress | ((address & 0x00000700) >> 8);
-		if(m_i2c.start(addressAssembled, true) != OK)
+		if(m_i2c.start(addressAssembled, true, 1) != OK)
 		{
 			return(0);
 		}
 		
 		
 		//	Write lower 8 Bit of Memory Address
-		m_i2c << (uint8) (address & 0x000000FF);
-		if(m_i2c.tx() != OK)
+		if(m_i2c.tx(address & 0x000000FF) != OK)
 		{
 			return(0);
 		}
 		
 		
 		//	Send another Start Condition but read Data this Time
-		if(m_i2c.start(addressAssembled, false) != OK)
+		if(m_i2c.start(addressAssembled, false, 1) != OK)
 		{
 			return(0);
 		}
@@ -66,19 +65,21 @@ namespace ICD
 		
 		//	Write Base Address and upper 3 Bits of Memory Address
 		const uint8 addressAssembled = slaveAddress | ((address & 0x00000700) >> 8);
-		if(m_i2c.start(addressAssembled, true) != OK)
+		if(m_i2c.start(addressAssembled, true, 2) != OK)
 		{
 			return(FAIL);
 		}
 		
 		
 		//	Write lower 8 Bit of Memory Address
-		m_i2c << (uint8) (address & 0x000000FF);
-		m_i2c << data;
+		if(m_i2c.tx(address & 0x000000FF) != OK)
+		{
+			return(FAIL);
+		}
 		
 		
 		//	Transmit Data
-		return(m_i2c.tx());
+		return(m_i2c.tx(data));
 	}
 	
 	
@@ -87,7 +88,7 @@ namespace ICD
 	/*                      						Public	  			 						 						 */
 	/*****************************************************************************/
 	
-	MB85RC16::MB85RC16(I2C& i2c)
+	MB85RC16::MB85RC16(I_I2C& i2c)
 		:	m_i2c(i2c)
 	{
 		

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "../i2c.hpp"
+#include "../i_i2c.hpp"
 #include "../i_nvm.hpp"
 
 
@@ -27,7 +27,7 @@ namespace ICD
 			
 			
 			//	Non-static Member
-			I2C& m_i2c;
+			I_I2C& m_i2c;
 			
 			
 			//	Constructor and Destructor
@@ -48,7 +48,7 @@ namespace ICD
 			
 		public:
 			
-			MB85RC16(I2C& i2c);
+			MB85RC16(I_I2C& i2c);
 			MB85RC16(const MB85RC16& mb85rc16) = delete;
 			~MB85RC16();
 			

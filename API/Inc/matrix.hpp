@@ -55,7 +55,7 @@ class Matrix
 		void append_row(Array<dataType>& row);
 		void append_column(Array<dataType>& column);
 		
-		void clear();
+		void erase();
 		feedback delete_row(uint32 rowNumber);
 		feedback delete_column(uint32 columnNumber);
 		
@@ -359,7 +359,7 @@ void Matrix<dataType>::append_column(Array<dataType>& column)
 
 
 template<typename dataType>
-void Matrix<dataType>::clear()
+void Matrix<dataType>::erase()
 {
 	m_matrix.erase();
 }

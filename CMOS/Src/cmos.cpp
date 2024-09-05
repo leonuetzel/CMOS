@@ -90,20 +90,25 @@ void CMOS::constructors() const
 
 CODE_RAM void CMOS::lockSemaphore()
 {
+	//	If Semaphore is already locked by this Thread, increase Counter and return
 	if(m_semaphore == m_runningThreadID)
 	{
 		m_semaphoreCounter++;
 		return;
 	}
 	
+	
+	//	Try to lock Semaphore
 	while(m_semaphore != m_runningThreadID)
 	{
 		if(m_semaphore == threadID_invalid)
 		{
+			//	Lock Semaphore if it is unlocked
 			asm volatile("svc #0x0");
 		}
 		else
 		{
+			//	Sleep if Semaphore is locked by another Thread
 			#if defined(CORTEX_M7)
 				sleep_100us(1);
 			#endif
@@ -117,17 +122,21 @@ CODE_RAM void CMOS::lockSemaphore()
 
 CODE_RAM feedback CMOS::unlockSemaphore()
 {
+	//	Check if Semaphore is locked by this Thread - this is the only Thread that is allowed to unlock the Semaphore
 	if(m_semaphore != m_runningThreadID)
 	{
 		return(FAIL);
 	}
 	
+	
 	if(m_semaphoreCounter != 0)
 	{
+		//	Decrease Counter if it is not 0 - that means the Semaphore is locked multiple times by this Thread
 		m_semaphoreCounter--;
 	}
 	else
 	{
+		//	Unlock Semaphore
 		m_semaphore = threadID_invalid;
 	}
 	return(OK);
@@ -613,14 +622,14 @@ uint16 CMOS::sleep_untilEvent()
 	else
 	{
 		//	Go sleep until any Event occurs
-		thread.m_wakeUpEventID = eventID_invalid - 1;
+		thread.m_wakeUpEventID = eventID_any;
 		contextSwitch();
 	}
 	
 	
-	//	Reset listening Parameters
-	thread.m_listeningEventID = eventID_invalid;
+	//	Reset Event Wakeup Parameters
 	thread.m_listeningEventOccured = false;
+	thread.m_wakeUpEventID = eventID_invalid;
 	
 	
 	//	Return the Event ID that woke us up
@@ -632,8 +641,15 @@ feedback CMOS::sleep_untilEvent(uint16 eventID)
 {
 	if(eventID < m_events.get_size())
 	{
-		m_thread[m_runningThreadID].m_wakeUpEventID = eventID;
+		Thread& thread = m_thread[m_runningThreadID];
+		
+		thread.m_wakeUpEventID = eventID;
 		contextSwitch();
+		
+		
+		//	Reset Event Wakeup Parameters
+		thread.m_listeningEventOccured = false;
+		thread.m_wakeUpEventID = eventID_invalid;
 		return(OK);
 	}
 	return(FAIL);
@@ -692,8 +708,8 @@ feedback CMOS::event_emit(uint16 eventID)
 				Thread& thread = m_thread[i];
 				if(thread.is_valid() == true)
 				{
-					//	Check if Thread waits for any subscripted Event (0xFFFE) or for the occured Event
-					if(thread.m_wakeUpEventID == eventID_invalid - 1 || thread.m_wakeUpEventID == eventID)
+					//	Check if Thread waits for any subscripted Event or for the occured Event
+					if(thread.m_wakeUpEventID == eventID_any || thread.m_wakeUpEventID == eventID)
 					{
 						thread.m_wakeUpEventID = eventID_invalid;
 						thread.m_triggeredWakeUpEventID = eventID;
@@ -1134,7 +1150,7 @@ CODE_RAM void EXCEPTION_SYSTICK()
 		if(thread.m_listeningEventOccured == true)
 		{
 			//	Only wakeup Thread if its sleeping already and waiting for this Event
-			if(thread.m_wakeUpEventID == thread.m_listeningEventID || thread.m_wakeUpEventID == CMOS::eventID_invalid - 1)
+			if(thread.m_wakeUpEventID == thread.m_listeningEventID || thread.m_wakeUpEventID == CMOS::eventID_any)
 			{
 				thread.m_wakeUpEventID = CMOS::eventID_invalid;
 				cmos.contextSwitch();

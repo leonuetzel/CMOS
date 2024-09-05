@@ -4,7 +4,6 @@
 //	General Defines
 #include "defines.hpp"
 #include "bit.hpp"
-#include "buffer.hpp"
 
 
 //	Hardware
@@ -24,6 +23,7 @@
 #include "i_can.hpp"
 #include "i_crc.hpp"
 #include "i_dma.hpp"
+#include "i_i2c.hpp"
 #include "i_nvm.hpp"
 #include "i_semaphore.hpp"
 #include "i_serial.hpp"
@@ -32,7 +32,6 @@
 
 //	Hardware Modules Design
 #include "canFrame.hpp"
-#include "i2c.hpp"
 #include "uart.hpp"
 
 
@@ -85,8 +84,12 @@
 
 //	IC Driver (ICD)
 #include "icd/24lc02b.hpp"
+#include "icd/ad5175.hpp"
+#include "icd/bq25887.hpp"
 #include "icd/mb85rc16.hpp"
 #include "icd/mcp23016.hpp"
+#include "icd/mcp3427.hpp"
+#include "icd/mcp3428.hpp"
 #include "icd/stc3100.hpp"
 
 
@@ -147,6 +150,7 @@ class CMOS
 		//	ID for invalid Thread Handle
 		static constexpr uint8 threadID_invalid					= 0xFF;
 		static constexpr uint16 eventID_invalid					= 0xFFFF;
+		static constexpr uint16 eventID_any							= 0xFFFE;
 		
 		
 		//	Systick Clock for Sleep Functions
@@ -643,7 +647,11 @@ inline feedback CMOS::send_mail(uint8 thread_ID, uint32 data)
 
 inline bool CMOS::is_mailAvailable() const
 {
-	return(m_thread(m_runningThreadID).m_mailBox.is_dataAvailable());
+	if(m_thread(m_runningThreadID).m_mailBox.is_empty() == true)
+	{
+		return(false);
+	}
+	return(true);
 }
 
 

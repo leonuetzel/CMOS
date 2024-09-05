@@ -40,9 +40,9 @@ class I_Serial : protected RingbufferExternal<dataType>
 		virtual feedback tx() = 0;
 		virtual void clear() = 0;
 		
-		virtual bool is_dataAvailable() const = 0;
 		virtual uint32 get_numberOfUnread() const = 0;
-		virtual Buffer::e_state get_state() const = 0;
+		virtual bool is_empty() const = 0;
+		virtual bool is_full() const = 0;
 		virtual bool contains(const dataType& data) const = 0;
 		
 		virtual I_Serial& operator<<(char data) = 0;

@@ -174,6 +174,131 @@ CODE_RAM String::String(Time::e_weekday weekday, Language::e_language language)
 
 
 
+CODE_RAM void String::from_hex(uint32 number, uint32 minimumDigits, bool prefix)
+{
+	constexpr char hexDigits[] = "0123456789ABCDEF";
+	
+	
+	//	Prefix
+	if(prefix == true)
+	{
+		this->operator=("0x");
+	}
+	else
+	{
+		erase();
+	}
+	
+	
+	//	Simple Case of Zero
+	if(number == 0)
+	{
+		if(minimumDigits != c_invalid)
+		{
+			for(uint32 i = 0; i < minimumDigits - 1; i++)
+			{
+				this->operator+=('0');
+			}
+		}
+		this->operator+=('0');
+		return;
+	}
+	
+	
+	//	Count Number of Hex Digits
+	uint32 temp = number;
+	uint8 numberOfHexDigits = 0;
+	while(temp > 0)
+	{
+		temp = temp >> 4;
+		numberOfHexDigits++;
+	}
+	
+	
+	//	Fill with Zeros
+	if(minimumDigits != c_invalid)
+	{
+		for(uint32 i = 0; i < minimumDigits - numberOfHexDigits; i++)
+		{
+			this->operator+=('0');
+		}
+	}
+	
+	
+	//	Convert Number to Hex
+	for(uint32 i = 0; i < numberOfHexDigits; i++)
+	{
+		const uint8 digit = (number >> (4 * (numberOfHexDigits - i - 1))) & 0xF;
+		this->operator+=(hexDigits[digit]);
+	}
+}
+
+
+CODE_RAM void String::from_hex(uint64 number, uint32 minimumDigits, bool prefix)
+{
+	constexpr char hexDigits[] = "0123456789ABCDEF";
+	
+	
+	//	Prefix
+	if(prefix == true)
+	{
+		this->operator=("0x");
+	}
+	else
+	{
+		erase();
+	}
+	
+	
+	//	Simple Case of Zero
+	if(number == 0)
+	{
+		if(minimumDigits != c_invalid)
+		{
+			for(uint32 i = 0; i < minimumDigits - 1; i++)
+			{
+				this->operator+=('0');
+			}
+		}
+		this->operator+=('0');
+		return;
+	}
+	
+	
+	//	Count Number of Hex Digits
+	uint32 temp = number;
+	uint8 numberOfHexDigits = 0;
+	while(temp > 0)
+	{
+		temp = temp >> 4;
+		numberOfHexDigits++;
+	}
+	
+	
+	//	Fill with Zeros
+	if(minimumDigits != c_invalid)
+	{
+		for(uint32 i = 0; i < minimumDigits - numberOfHexDigits; i++)
+		{
+			this->operator+=('0');
+		}
+	}
+	
+	
+	//	Convert Number to Hex
+	for(uint32 i = 0; i < numberOfHexDigits; i++)
+	{
+		const uint8 digit = (number >> (4 * (numberOfHexDigits - i - 1))) & 0xF;
+		this->operator+=(hexDigits[digit]);
+	}
+}
+
+
+
+
+
+
+
 CODE_RAM const char* String::get_string() const
 {
 	return(get_data());

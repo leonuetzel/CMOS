@@ -66,6 +66,7 @@ namespace CORE
 		{
 			volatile uint32* const CPU_ID						= (volatile uint32* const) (BASE::SCB + 0x00);
 			volatile uint32* const ICSR							= (volatile uint32* const) (BASE::SCB + 0x04);
+			volatile uint32* const VTOR							= (volatile uint32* const) (BASE::SCB + 0x08);
 			volatile uint32* const AIR_CR						= (volatile uint32* const) (BASE::SCB + 0x0C);
 			volatile uint32* const SCR							= (volatile uint32* const) (BASE::SCB + 0x10);
 			volatile uint32* const CCR							= (volatile uint32* const) (BASE::SCB + 0x14);

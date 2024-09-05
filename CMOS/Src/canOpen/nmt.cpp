@@ -174,9 +174,6 @@ namespace canOpen
 		
 		
 		//	Send Frame
-		m_can << canFrame;
-		
-		
-		return(OK);
+		return(m_can.tx(canFrame));
 	}
 };

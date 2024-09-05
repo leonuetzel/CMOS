@@ -61,7 +61,7 @@ CODE_RAM uint8 UART::rx()
 	//	Sleep until Data arrives
 	CMOS& cmos = CMOS::get();
 	cmos.event_listen(m_eventID_dataReceived);
-	while(is_dataAvailable() == false)
+	while(is_empty() == true)
 	{
 		cmos.sleep_untilEvent(m_eventID_dataReceived);
 	}
@@ -95,7 +95,9 @@ CODE_RAM feedback UART::tx()
 	}
 	
 	
-	//	Clear Ringbuffer after Transfer finished
-	m_txBuffer.clear();
+	//	Reset Ringbuffer after Transfer finished
+	//	Its important to use the reset() Function here, because it resets the Buffer Pointers to 0 where the DMA starts to read from
+	//	The clear() Function would just set tail = head, which would result in the DMA reading the right amount of Data, but from the wrong Position
+	m_txBuffer.reset();
 	return(OK);
 }

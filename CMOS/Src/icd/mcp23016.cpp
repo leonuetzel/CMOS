@@ -21,22 +21,21 @@ namespace ICD
 	uint8 MCP23016::read_register(REG address)
 	{
 		//	Send Start Condition
-		if(m_i2c.start(slaveAddressCustomized, true) != OK)
+		if(m_i2c.start(slaveAddressCustomized, true, 1) != OK)
 		{
 			return(0);
 		}
 		
 		
 		//	Send Register Address to read from
-		m_i2c << (uint8) address;
-		if(m_i2c.tx() != OK)
+		if(m_i2c.tx((uint8) address) != OK)
 		{
 			return(0);
 		}
 		
 		
 		//	Send another Start Condition with read Bit this Time
-		if(m_i2c.start(slaveAddressCustomized, false) != OK)
+		if(m_i2c.start(slaveAddressCustomized, false, 1) != OK)
 		{
 			return(0);
 		}
@@ -50,19 +49,21 @@ namespace ICD
 	feedback MCP23016::write_register(REG address, uint8 data)
 	{
 		//	Send Start Condition
-		if(m_i2c.start(slaveAddressCustomized, true) != OK)
+		if(m_i2c.start(slaveAddressCustomized, true, 2) != OK)
 		{
 			return(FAIL);
 		}
 		
 		
 		//	Send Register Address to write to
-		m_i2c << (uint8) address;
-		m_i2c << data;
+		if(m_i2c.tx((uint8) address) != OK)
+		{
+			return(FAIL);
+		}
 		
 		
 		//	Transmit Data
-		return(m_i2c.tx());
+		return(m_i2c.tx(data));
 	}
 	
 	
@@ -71,7 +72,7 @@ namespace ICD
 	/*                      						Public	  			 						 						 */
 	/*****************************************************************************/
 	
-	MCP23016::MCP23016(I2C& i2c, bool a2, bool a1, bool a0)
+	MCP23016::MCP23016(I_I2C& i2c, bool a2, bool a1, bool a0)
 		:	m_i2c(i2c),
 			slaveAddressCustomized(slaveAddress)
 	{

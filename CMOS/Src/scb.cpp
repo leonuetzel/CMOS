@@ -54,6 +54,28 @@ extern uint32 __cmos_initial_stackpointer__;
 	};
 #endif
 
+#if defined(CORTEX_M4)
+	EXCEPTION_VECTOR const SCB::s_exceptionTable SCB::c_exceptionTable =
+	{
+		(uint32) &__cmos_initial_stackpointer__,	                                      																					// 0x000 Main Stack Pointer
+		(uint32) EXCEPTION_RESET,                                                                                                 // 0x004 Reset
+		(uint32) EXCEPTION_NMI,                                                                                                   // 0x008 Non Maskable Interrupt
+		(uint32) EXCEPTION_HARD_FAULT,                                                                                            // 0x00C Hard Fault
+		(uint32) EXCEPTION_MEMORY_MANAGEMENT_FAULT,                                                                               // 0x010 Memory Management
+		(uint32) EXCEPTION_BUS_FAULT,                                                                                             // 0x014 Bus Fault
+		(uint32) EXCEPTION_USAGE_FAULT,                                                                                           // 0x018 Usage Fault
+		(uint32) 0,                                                                                                               // 0x01C Reserved
+		(uint32) 0,                                                                                                               // 0x020 Reserved
+		(uint32) 0,                                                                                                               // 0x024 Reserved
+		(uint32) 0,                                                                                                               // 0x028 Reserved
+		(uint32) EXCEPTION_SVC,                                                                                                   // 0x02C Supervisor Call
+		(uint32) 0,                                                                                         											// 0x030 Reserved
+		(uint32) 0,                                                                                                               // 0x034 Reserved
+		(uint32) EXCEPTION_PENDING_SV,                                                                                            // 0x038 Pending Supervisor
+		(uint32) EXCEPTION_SYSTICK,                                                                                               // 0x03C CMOS Tick Timer
+	};
+#endif
+
 #if defined(CORTEX_M7)
 	EXCEPTION_VECTOR const SCB::s_exceptionTable SCB::c_exceptionTable =
 	{

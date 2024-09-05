@@ -56,8 +56,8 @@ class I_CAN
 		
 	public:
 		
-		virtual I_CAN& operator<<(const CAN_Frame& canFrame) = 0;
-		virtual I_CAN& operator>>(CAN_Frame& canFrame) = 0;
+		virtual feedback tx(const CAN_Frame& canFrame) = 0;
+		virtual feedback rx(CAN_Frame& canFrame) = 0;
 		
 		virtual uint32 get_numberOfUnread() const = 0;
 		virtual bool is_dataAvailable() const = 0;

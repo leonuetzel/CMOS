@@ -86,9 +86,9 @@ class UART: public I_Serial<uint8>
 		feedback tx() override;
 		inline void clear() override;
 		
-		inline bool is_dataAvailable() const override;
 		inline uint32 get_numberOfUnread() const override;
-		inline Buffer::e_state get_state() const override;
+		inline bool is_empty() const override;
+		inline bool is_full() const override;
 		inline bool contains(const uint8& data) const override;
 		
 		inline UART& operator<<(char data) override;
@@ -150,20 +150,13 @@ inline UART::~UART()
 
 inline void UART::clear()
 {
-	m_tail = m_head;
-	m_state = Buffer::e_state::EMPTY;
+	return(RingbufferExternal<uint8>::clear());
 }
 
 
 
 
 
-
-
-inline bool UART::is_dataAvailable() const
-{
-	return(RingbufferExternal<uint8>::is_dataAvailable());
-}
 
 
 inline uint32 UART::get_numberOfUnread() const
@@ -172,9 +165,15 @@ inline uint32 UART::get_numberOfUnread() const
 }
 
 
-inline Buffer::e_state UART::get_state() const
+inline bool UART::is_empty() const
 {
-	return(RingbufferExternal<uint8>::get_state());
+	return(RingbufferExternal<uint8>::is_empty());
+}
+
+
+inline bool UART::is_full() const
+{
+	return(RingbufferExternal<uint8>::is_full());
 }
 
 
