@@ -154,7 +154,7 @@ inline feedback NVIC::enable(uint16 interrupt)
 }
 
 
-inline uint32 NVIC::disable(uint16 interrupt)
+inline feedback NVIC::disable(uint16 interrupt)
 {
 	if(interrupt < c_numberOfExceptions || interrupt >= c_numberOfExceptions + c_numberOfInterrupts)
 	{

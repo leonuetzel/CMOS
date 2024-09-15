@@ -28,9 +28,9 @@ UART::UART(void* txDataRegister)
 	:	I_Serial<uint8>(),
 		
 		m_initialized(false),
+		m_dma_tx(nullptr),
 		m_txBuffer(nullptr, 0),
 		m_eventID_dataReceived(CMOS::get().event_create()),
-		m_dma_tx(nullptr),
 		m_txDataRegister(txDataRegister)
 {
 	CMOS::get().event_subscribe(m_eventID_dataReceived);
