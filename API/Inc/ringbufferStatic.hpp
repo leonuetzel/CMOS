@@ -133,7 +133,6 @@ CODE_RAM dataType RingbufferStatic<dataType, N>::read()
 	
 	
 	//	Read Data
-	if(get_numberOfUnread() > 0)
 	data = m_data[m_tail];
 	
 	
