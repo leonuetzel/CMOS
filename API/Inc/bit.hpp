@@ -183,7 +183,7 @@ namespace bit
 		
 		
 		
-		constexpr inline void double_to_8x8Bit(double data, uint8 outBuffer[8])
+		constexpr inline void double_to_8x8Bit(double data, uint8 outBuffer[8], bool msbFirst = true)
 		{
 			union convert
 			{
@@ -194,14 +194,24 @@ namespace bit
 			convert c = {0};
 			c.d = data;
 			
-			for(uint32 i = 0; i < 8; i++)
+			if(msbFirst == false)
 			{
-				outBuffer[i] = c.u[i];
+				for(uint32 i = 0; i < 8; i++)
+				{
+					outBuffer[i] = c.u[i];
+				}
+			}
+			else
+			{
+				for(uint32 i = 0; i < 8; i++)
+				{
+					outBuffer[i] = c.u[7 - i];
+				}
 			}
 		}
 		
 		
-		constexpr inline double _8x8Bit_to_double(const uint8* lowestByte)
+		constexpr inline double _8x8Bit_to_double(const uint8* lowestByte, bool msbFirst = true)
 		{
 			union convert
 			{
@@ -210,16 +220,27 @@ namespace bit
 			};
 			
 			convert c = {0};
-			for(uint32 i = 0; i < 8; i++)
+			
+			if(msbFirst == false)
 			{
-				c.u[i] = lowestByte[i];
+				for(uint32 i = 0; i < 8; i++)
+				{
+					c.u[i] = lowestByte[i];
+				}
+			}
+			else
+			{
+				for(uint32 i = 0; i < 8; i++)
+				{
+					c.u[i] = lowestByte[7 - i];
+				}
 			}
 			
 			return(c.d);
 		}
 		
 		
-		constexpr inline void float_to_4x8Bit(float data, uint8 outBuffer[4])
+		constexpr inline void float_to_4x8Bit(float data, uint8 outBuffer[4], bool msbFirst = true)
 		{
 			union convert
 			{
@@ -230,14 +251,24 @@ namespace bit
 			convert c = {0};
 			c.d = data;
 			
-			for(uint32 i = 0; i < 4; i++)
+			if(msbFirst == false)
 			{
-				outBuffer[i] = c.u[i];
+				for(uint32 i = 0; i < 4; i++)
+				{
+					outBuffer[i] = c.u[i];
+				}
+			}
+			else
+			{
+				for(uint32 i = 0; i < 4; i++)
+				{
+					outBuffer[i] = c.u[3 - i];
+				}
 			}
 		}
 		
 		
-		constexpr inline float _4x8Bit_to_float(const uint8* lowestByte)
+		constexpr inline float _4x8Bit_to_float(const uint8* lowestByte, bool msbFirst = true)
 		{
 			union convert
 			{
@@ -246,9 +277,20 @@ namespace bit
 			};
 			
 			convert c = {0};
-			for(uint32 i = 0; i < 4; i++)
+			
+			if(msbFirst == false)
 			{
-				c.u[i] = lowestByte[i];
+				for(uint32 i = 0; i < 4; i++)
+				{
+					c.u[i] = lowestByte[i];
+				}
+			}
+			else
+			{
+				for(uint32 i = 0; i < 4; i++)
+				{
+					c.u[i] = lowestByte[3 - i];
+				}
 			}
 			
 			return(c.d);
