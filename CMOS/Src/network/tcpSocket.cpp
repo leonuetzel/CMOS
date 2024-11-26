@@ -294,6 +294,14 @@ void TCP_Socket::handlePacket(const TCP_Frame& tcpFrame)
 	}
 	
 	
+	//	Check for Abortion by a RST Packet from Server
+	if(tcpFrame.reset == true)
+	{
+		m_state = e_state::CLOSED;
+		return;
+	}
+	
+	
 	switch(m_state)
 	{
 		case e_state::ESTABLISHING:

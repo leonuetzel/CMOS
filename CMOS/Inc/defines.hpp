@@ -15,8 +15,8 @@ typedef signed long					int32;
 typedef signed long long		int64;
 
 typedef uint32 feedback;
-#define OK		0
-#define FAIL	1
+constexpr uint32 OK		= 0;
+constexpr uint32 FAIL	= 1;
 
 
 

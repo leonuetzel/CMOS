@@ -48,9 +48,10 @@ class TCP
 		
 	public:
 		
-		void handlePacket(const TCP_Frame& tcpFrame);
+		void handlePacket(const TCP_Frame& tcpFrame, const Array<uint8>& sourceIpAddress);
 		
 		TCP_Socket* createSocket(const Array<uint8>& destinationIpAddress, uint16 destinationPort, uint16 sourcePort, uint32 maximumSegmentSize, uint32 receiveBufferSize);
+		feedback deleteSocket(TCP_Socket* tcpSocket);
 };
 
 

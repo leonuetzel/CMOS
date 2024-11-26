@@ -144,57 +144,61 @@ IP_Frame::IP_Frame(const Array<uint8>& data)
 	
 	
 	//	Options
-	uint32 index = 20;
-	while(1)
+	//	Options are only present if the Internet Header Length is greater than 5
+	if(internetHeaderLength > 5)
 	{
-		s_option option;
-		
-		
-		//	Copied Bit
-		option.copied = bit::isSet(data[index], 7);
-		
-		
-		//	Option Class
-		option.optionClass = (e_optionClass) ((data[index] & 0x60) >> 5);
-		
-		
-		//	Option Number
-		//	Terminate Option Parsing when "End of Option List" Option appears
-		option.option = (e_option) (data[index] & 0x1F);
-		if(option.option == e_option::END_OF_OPTIONS)
+		uint32 index = 20;
+		while(1)
 		{
-			break;
-		}
-		
-		
-		//	Option Length
-		//	Includes all Option Fields
-		const uint32 optionLength = data[index + 1] - 2;
-		
-		
-		//	Option Data
-		if(optionLength > 0)
-		{
-			option.data.set_size(optionLength);
-			for(uint32 i = 0; i < optionLength; i++)
+			s_option option;
+			
+			
+			//	Copied Bit
+			option.copied = bit::isSet(data[index], 7);
+			
+			
+			//	Option Class
+			option.optionClass = (e_optionClass) ((data[index] & 0x60) >> 5);
+			
+			
+			//	Option Number
+			//	Terminate Option Parsing when "End of Option List" Option appears
+			option.option = (e_option) (data[index] & 0x1F);
+			if(option.option == e_option::END_OF_OPTIONS)
 			{
-				option.data[i] = data[i + index + 2];
+				break;
 			}
-		}
-		
-		
-		//	Increment Index for next Option
-		index++;
-		if(optionLength > 0)
-		{
-			index += 1 + optionLength;
+			
+			
+			//	Option Length
+			//	Includes all Option Fields
+			const uint32 optionLength = data[index + 1] - 2;
+			
+			
+			//	Option Data
+			if(optionLength > 0)
+			{
+				option.data.set_size(optionLength);
+				for(uint32 i = 0; i < optionLength; i++)
+				{
+					option.data[i] = data[i + index + 2];
+				}
+			}
+			
+			
+			//	Increment Index for next Option
+			index++;
+			if(optionLength > 0)
+			{
+				index += 1 + optionLength;
+			}
 		}
 	}
 	
 	
 	//	Payload
 	//	Starts after 4 x "Internet Header Length" Byte
-	const uint32 payloadLength = totalLength - internetHeaderLength;
+	const uint32 payloadLength = totalLength - 4 * internetHeaderLength;
 	payload.set_size(payloadLength);
 	for(uint32 i = 0; i < payloadLength; i++)
 	{

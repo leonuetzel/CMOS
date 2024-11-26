@@ -17,7 +17,8 @@
 /*****************************************************************************/
 
 DHCP::DHCP(const uint8& networkID)
-	:	m_networkID(networkID)
+	:	m_networkID(networkID),
+		m_deviceName()
 {
 	m_threadID = CMOS::get().thread_create(&DHCP::manager, this, "DHCP", 100, 2048);
 }
@@ -280,8 +281,7 @@ void DHCP::discover()
 	{
 		DHCP_Frame::s_option* option = new DHCP_Frame::s_option;
 		option->code = DHCP_Frame::e_option::HOST_NAME;
-		const String hostName("Composter");
-		for(auto& i: hostName)
+		for(auto& i: m_deviceName)
 		{
 			option->data += i;
 		}
@@ -653,6 +653,17 @@ feedback DHCP::process_ack(const DHCP_Frame& dhcpAck)
 void DHCP::decline()
 {
 	//	Tbd
+}
+
+
+
+
+
+
+
+void DHCP::setDeviceName(const String& deviceName)
+{
+	m_deviceName = deviceName;
 }
 
 

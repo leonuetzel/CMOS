@@ -96,7 +96,7 @@ class Network
 		uint8 attach();
 		feedback detach();
 		
-		void setup_DHCP();
+		void setup_DHCP(const String& deviceName);
 		const Array<uint8> getIpAddressByDNS(const String& domainName);
 		
 		

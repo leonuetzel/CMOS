@@ -68,7 +68,7 @@ class Array
 		//	Editing
 		feedback set_size(uint32 newSize, bool fillWithDefaultValue = true, dataType defaultValue = dataType());
 		inline void fill(const dataType& data);
-		feedback insert(uint32 index, dataType data);
+		feedback insert(uint32 index, const dataType& data);
 		feedback insert(uint32 index, const Array& array);
 		feedback erase(uint32 index, uint32 numberOfElementsToErase = 1);
 		void erase();
@@ -464,7 +464,7 @@ inline void Array<dataType>::fill(const dataType& data)
 
 
 template<typename dataType>
-CODE_RAM feedback Array<dataType>::insert(uint32 index, dataType data)
+CODE_RAM feedback Array<dataType>::insert(uint32 index, const dataType& data)
 {
 	//	Check Index Validity
 	if(index > m_size)

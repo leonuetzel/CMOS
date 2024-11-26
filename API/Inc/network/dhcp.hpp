@@ -35,6 +35,7 @@ class DHCP
 		
 		//	Non-static Member
 		const uint8& m_networkID;
+		String m_deviceName;
 		e_state m_state;
 		uint8 m_threadID;
 		uint8 m_threadID_leaseTimer;
@@ -63,6 +64,8 @@ class DHCP
 		void request(const Array<uint8>& yourIpAddress, const Array<uint8>& serverIdentifier, bool broadcast = true);
 		feedback process_ack(const DHCP_Frame& dhcpOffer);
 		void decline();
+		
+		void setDeviceName(const String& deviceName);
 		
 		
 		//	Friends

@@ -60,7 +60,7 @@ class SCB
 		feedback init();
 		
 		inline uint32 get_ID_core() const;
-		inline static void reset();
+		static void reset();
 		inline uint16 get_activeInterruptVector();
 		
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
@@ -181,13 +181,6 @@ inline void SCB::set_priorityGrouping(e_priorityGrouping priorityGrouping)
 inline uint32 SCB::get_ID_core() const
 {
 	return(*CORE::SCB::CPU_ID);
-}
-
-
-inline void SCB::reset()
-{
-	uint32 temp = *CORE::SCB::AIR_CR & 0x0000FFFF;
-	*CORE::SCB::AIR_CR = temp | (0x05FA << 16) | (1 << 2);
 }
 
 

@@ -180,8 +180,17 @@ void IP::packetHandler(const IP_Frame& ipFrame)
 		
 		case IP_Frame::e_protocol::TCP:
 		{
+			//	Extract Source IP Address
+			Array<uint8> sourceIpAddress(0, 4);
+			for(uint32 i = 0; i < 4; i++)
+			{
+				sourceIpAddress[i] = ipFrame.sourceAddress[i];
+			}
+			
+			
+			//	Handle the TCP Packet
 			TCP_Frame tcpFrame(ipFrame.payload);
-			network.m_tcp.handlePacket(tcpFrame);
+			network.m_tcp.handlePacket(tcpFrame, sourceIpAddress);
 		}
 		
 		default:

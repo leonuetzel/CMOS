@@ -122,8 +122,12 @@ feedback Network::detach()
 
 
 
-void Network::setup_DHCP()
+void Network::setup_DHCP(const String& deviceName)
 {
+	//	Set Device Name for DHCP
+	m_dhcp.setDeviceName(deviceName);
+	
+	
 	//	Start DHCP State Machine to obtain an IP Address from the DHCP Server
 	DHCP_Frame& dummyFrame = *new DHCP_Frame;
 	m_dhcp.handlePacket(dummyFrame);

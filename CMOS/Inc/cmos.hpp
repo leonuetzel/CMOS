@@ -24,6 +24,7 @@
 #include "i_crc.hpp"
 #include "i_dma.hpp"
 #include "i_i2c.hpp"
+#include "i_mdio.hpp"
 #include "i_nvm.hpp"
 #include "i_semaphore.hpp"
 #include "i_serial.hpp"
@@ -86,6 +87,7 @@
 #include "icd/24lc02b.hpp"
 #include "icd/ad5175.hpp"
 #include "icd/bq25887.hpp"
+#include "icd/dp83825i.hpp"
 #include "icd/mb85rc16.hpp"
 #include "icd/mcp23016.hpp"
 #include "icd/mcp3427.hpp"
@@ -289,7 +291,7 @@ class CMOS
 		
 		
 		//	Reset
-		inline void reset();
+		void reset();
 		
 		
 		//	Threading Functions
@@ -316,8 +318,8 @@ class CMOS
 		
 		//	Sleep Functions
 		inline void sleep();
-		uint16 sleep_untilEvent();
-		feedback sleep_untilEvent(uint16 eventID);
+		uint16 sleep_untilEvent(uint32 timeout_ms = 0);
+		uint16 sleep_untilEvent(uint16 eventID, uint32 timeout_ms = 0);
 		void sleep_untilMail(uint8 senderID);
 		#if defined(CORTEX_M7)
 			inline void sleep_100us(uint32 units_of_100us);
@@ -435,12 +437,6 @@ class CMOS
 constexpr inline Time CMOS::get_time() const
 {
 	return(m_time);
-}
-
-
-inline void CMOS::reset()
-{
-	m_scb.reset();
 }
 
 

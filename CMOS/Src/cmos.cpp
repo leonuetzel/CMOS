@@ -453,6 +453,17 @@ void CMOS::run()
 
 
 
+void CMOS::reset()
+{
+	m_scb.reset();
+}
+
+
+
+
+
+
+
 uint8 CMOS::thread_create(f_thread entry, String name, uint8 priority, uint16 stack_size, uint8 mailBoxSize, void* object)
 {
 	if(entry == nullptr || name.get_size() == 0 || mailBoxSize == 0)
@@ -607,7 +618,7 @@ feedback CMOS::thread_shutdown(uint8 threadID, bool hardShutdown)
 
 
 
-uint16 CMOS::sleep_untilEvent()
+uint16 CMOS::sleep_untilEvent(uint32 timeout_ms)
 {
 	//	Sleep until any subscripted Event occurs
 	Thread& thread = m_thread[m_runningThreadID];
@@ -621,6 +632,18 @@ uint16 CMOS::sleep_untilEvent()
 	}
 	else
 	{
+		//	Reset Triggered Event ID, so that eventID_invalid is returned if no Event occurs and the Thread gets woken up by the Systick because of the Timeout
+		thread.m_triggeredWakeUpEventID = eventID_invalid;
+		
+		
+		//	Set Timeout for Sleep - Systick Interrupt will wake-up Thread if Event does not occur
+		if(timeout_ms > c_sleepTime_ms_max)
+		{
+			timeout_ms = c_sleepTime_ms_max;
+		}
+		m_thread[m_runningThreadID].m_sleepTime = (c_clock_systick / 1000) * timeout_ms;
+		
+		
 		//	Go sleep until any Event occurs
 		thread.m_wakeUpEventID = eventID_any;
 		contextSwitch();
@@ -637,22 +660,49 @@ uint16 CMOS::sleep_untilEvent()
 }
 
 
-feedback CMOS::sleep_untilEvent(uint16 eventID)
+uint16 CMOS::sleep_untilEvent(uint16 eventID, uint32 timeout_ms)
 {
 	if(eventID < m_events.get_size())
 	{
 		Thread& thread = m_thread[m_runningThreadID];
 		
+		
+		//	Reset Triggered Event ID, so that eventID_invalid is returned if no Event occurs and the Thread gets woken up by the Systick because of the Timeout
+		thread.m_triggeredWakeUpEventID = eventID_invalid;
+		
+		
+		//	Check if Event already occured by checking the Listening Event ID
+		if(thread.m_listeningEventID == eventID && thread.m_listeningEventOccured == true)
+		{
+			//	Listened Event already occured -> dont go sleep
+			thread.m_triggeredWakeUpEventID = eventID;
+			thread.m_listeningEventOccured = false;
+			return(eventID);
+		}
+		
+		
+		//	Set Event ID to be woke up by
 		thread.m_wakeUpEventID = eventID;
+		
+		
+		//	Set Timeout for Sleep - Systick Interrupt will wake-up Thread if Event does not occur
+		if(timeout_ms > c_sleepTime_ms_max)
+		{
+			timeout_ms = c_sleepTime_ms_max;
+		}
+		m_thread[m_runningThreadID].m_sleepTime = (c_clock_systick / 1000) * timeout_ms;
+		
+		
+		//	Go sleep until Event occurs
 		contextSwitch();
 		
 		
 		//	Reset Event Wakeup Parameters
 		thread.m_listeningEventOccured = false;
 		thread.m_wakeUpEventID = eventID_invalid;
-		return(OK);
+		return(thread.m_triggeredWakeUpEventID);
 	}
-	return(FAIL);
+	return(eventID_invalid);
 }
 
 
@@ -711,8 +761,16 @@ feedback CMOS::event_emit(uint16 eventID)
 					//	Check if Thread waits for any subscripted Event or for the occured Event
 					if(thread.m_wakeUpEventID == eventID_any || thread.m_wakeUpEventID == eventID)
 					{
+						//	Reset Timeout Sleep Value of this Thread
+						thread.m_sleepTime = 0;
+						
+						
+						//	Reset Event Wakeup Parameters
 						thread.m_wakeUpEventID = eventID_invalid;
 						thread.m_triggeredWakeUpEventID = eventID;
+						
+						
+						//	Wake up Thread
 						contextSwitchNecessary = true;
 					}
 					
@@ -720,7 +778,15 @@ feedback CMOS::event_emit(uint16 eventID)
 					//	Check if Thread listens to this Event
 					if(thread.m_listeningEventID == eventID)
 					{
+						//	Reset Timeout Sleep Value of this Thread
+						thread.m_sleepTime = 0;
+						
+						
+						//	Reset Event Listening Parameters
 						thread.m_listeningEventOccured = true;
+						
+						
+						//	Wake up Thread
 						contextSwitchNecessary = true;
 					}
 					
@@ -1141,6 +1207,7 @@ CODE_RAM void EXCEPTION_SYSTICK()
 			thread.m_sleepTime = temp;
 			if(temp == 0)
 			{
+				thread.m_wakeUpEventID = cmos.eventID_invalid;
 				cmos.contextSwitch();
 			}
 		}
@@ -1309,6 +1376,11 @@ CODE_RAM void* operator new(unsigned int sizeInBytes)
 	CMOS& cmos = *CMOS::c_this;
 	
 	uint32 sizeInBytes_aligned = cmos.m_heap.alignToBlocksize(sizeInBytes);
+	if(sizeInBytes_aligned > cmos.m_heap.get_sizeTotalInBytes())
+	{
+		void* returnValue = nullptr;
+		return(returnValue);
+	}
 	
 	cmos.lockSemaphore();
 	void* data = cmos.m_heap.reserve(cmos.m_runningThreadID, sizeInBytes_aligned);

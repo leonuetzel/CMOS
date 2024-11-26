@@ -124,6 +124,5 @@ feedback Ethernet::tx(const Array<uint8>& data, const Array<uint8>& destinationM
 	ethernetFrame.payload = data;
 	
 	
-	network.m_physicalLayer.tx(ethernetFrame.convertToByteStream());
-	return(OK);
+	return(network.m_physicalLayer.tx(ethernetFrame.convertToByteStream()));
 }

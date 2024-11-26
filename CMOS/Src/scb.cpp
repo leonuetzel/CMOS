@@ -174,6 +174,18 @@ feedback SCB::init()
 
 
 
+void SCB::reset()
+{
+	const uint32 temp = *CORE::SCB::AIR_CR & 0x0000FFFF;
+	*CORE::SCB::AIR_CR = temp | (0x05FA << 16) | (1 << 2);
+}
+
+
+
+
+
+
+
 #if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 	feedback SCB::enable(uint16 exception)
 	{

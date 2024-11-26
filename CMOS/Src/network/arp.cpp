@@ -27,7 +27,8 @@
 ARP::ARP(const uint8& networkID)
 	:	m_networkID(networkID)
 {
-	
+	CMOS& cmos = CMOS::get();
+	cmos.semaphore_create(this);
 }
 
 
@@ -79,7 +80,10 @@ bool ARP::probe(const Array<uint8>& protocolAddress, uint8 numberOfRetries, uint
 	//	If ARP Table already contains the requested IP Address, erase it to renew it
 	if(contains_protocolAddress(protocolAddress) == true)
 	{
+		CMOS& cmos = CMOS::get();
+		cmos.semaphore_lock(this);
 		m_table.erase(protocolAddress);
+		cmos.semaphore_unlock(this);
 	}
 	
 	
@@ -104,14 +108,19 @@ bool ARP::probe(const Array<uint8>& protocolAddress, uint8 numberOfRetries, uint
 
 void ARP::update(const Array<uint8>& protocolAddress, const Array<uint8>& hardwareAddress)
 {
+	CMOS& cmos = CMOS::get();
 	if(contains_protocolAddress(protocolAddress) == true)
 	{
+		cmos.semaphore_lock(this);
 		m_table[protocolAddress] = hardwareAddress;
+		cmos.semaphore_unlock(this);
 	}
 	else
 	{
 		Pair<Array<uint8>, Array<uint8>> entry(protocolAddress, hardwareAddress);
+		cmos.semaphore_lock(this);
 		m_table += entry;
+		cmos.semaphore_unlock(this);
 	}
 }
 
@@ -123,19 +132,27 @@ void ARP::update(const Array<uint8>& protocolAddress, const Array<uint8>& hardwa
 
 bool ARP::contains_protocolAddress(const Array<uint8>& protocolAddress) const
 {
-	return(m_table.contains(protocolAddress));
+	CMOS& cmos = CMOS::get();
+	cmos.semaphore_lock(this);
+	const bool result = m_table.contains(protocolAddress);
+	cmos.semaphore_unlock(this);
+	return(result);
 }
 
 
 bool ARP::contains_hardwareAddress(const Array<uint8>& hardwareAddress) const
 {
+	CMOS& cmos = CMOS::get();
+	cmos.semaphore_lock(this);
 	for(auto& i: m_table)
 	{
 		if(i.second() == hardwareAddress)
 		{
+			cmos.semaphore_unlock(this);
 			return(true);
 		}
 	}
+	cmos.semaphore_unlock(this);
 	return(false);
 }
 
@@ -151,7 +168,11 @@ Array<uint8> ARP::get_hardwareAddress(const Array<uint8>& protocolAddress, bool 
 	
 	if(contains_protocolAddress(protocolAddress) == true)
 	{
-		return(m_table[protocolAddress]);
+		CMOS& cmos = CMOS::get();
+		cmos.semaphore_lock(this);
+		Array<uint8> result = m_table[protocolAddress];
+		cmos.semaphore_unlock(this);
+		return(result);
 	}
 	
 	
@@ -211,7 +232,12 @@ Array<uint8> ARP::get_hardwareAddress(const Array<uint8>& protocolAddress, bool 
 	}
 	
 	
-	return(m_table[protocolAddress]);
+	//	Return the Hardware Address
+	cmos.semaphore_lock(this);
+	Array<uint8> result = m_table[protocolAddress];
+	cmos.semaphore_unlock(this);
+	
+	return(result);
 }
 
 
@@ -219,7 +245,11 @@ Array<uint8> ARP::get_protocolAddress(const Array<uint8>& hardwareAddress) const
 {
 	if(contains_hardwareAddress(hardwareAddress) == true)
 	{
-		return(m_table[hardwareAddress]);
+		CMOS& cmos = CMOS::get();
+		cmos.semaphore_lock(this);
+		Array<uint8> result = m_table[hardwareAddress];
+		cmos.semaphore_unlock(this);
+		return(result);
 	}
 	return(Array<uint8>());
 }

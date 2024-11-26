@@ -2,6 +2,7 @@
 
 #include "../cmos.hpp"
 #include "ethernetFrame.hpp"
+#include "ethernetPhy.hpp"
 
 
 

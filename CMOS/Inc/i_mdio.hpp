@@ -1,14 +1,12 @@
 #pragma once
 
-#include "../cmos.hpp"
-#include "ethernetFrame.hpp"
-#include "ethernetPhy.hpp"
+#include "defines.hpp"
 
 
 
 
 
-class Ethernet
+class I_MDIO
 {
 	public:
 		
@@ -25,13 +23,11 @@ class Ethernet
 		
 		
 		//	Non-static Member
-		const uint8& m_networkID;
+		
 		
 		
 		//	Constructor and Destructor
-		Ethernet(const uint8& networkID);
-		Ethernet(const Ethernet& ethernet) = delete;
-		~Ethernet();
+		
 		
 		
 		//	Member Functions
@@ -39,7 +35,7 @@ class Ethernet
 		
 		
 		//	Friends
-		friend class Network;
+		
 		
 		
 		
@@ -47,9 +43,8 @@ class Ethernet
 		
 	public:
 		
-		void handlePacket(const EthernetFrame& ethernetFrame);
-		
-		feedback tx(const Array<uint8>& data, const Array<uint8>& destinationMacAddress, EthernetFrame::e_etherType etherType, bool VLAN = false, uint16 VLAN_tag = 0x0000);
+		virtual uint16 readRegister(uint16 address) = 0;
+		virtual feedback writeRegister(uint16 address, uint16 data) = 0;
 };
 
 
@@ -64,14 +59,6 @@ class Ethernet
 
 /*****************************************************************************/
 /*                      						Private	  			 						 						 */
-/*****************************************************************************/
-
-
-
-
-
-/*****************************************************************************/
-/*                      					Protected	  			 						 						 */
 /*****************************************************************************/
 
 
