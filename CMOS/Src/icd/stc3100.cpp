@@ -112,12 +112,26 @@ namespace ICD
 		
 		
 		//	Check CRC of Unique Device ID
-		m_crc.init((uint8) 0x00, 0x07);
+		CMOS& cmos = CMOS::get();
+		if(cmos.semaphore_lock(&m_crc) != OK)
+		{
+			return;
+		}
+		
+		if(m_crc.init((uint8) 0x00, 0x07) != OK)
+		{
+			return;
+		}
 		for(uint32 i = 0; i < 7; i++)
 		{
 			m_crc << ID[i];
 		}
 		if(m_crc() != ID[7])
+		{
+			return;
+		}
+		
+		if(cmos.semaphore_unlock(&m_crc) != OK)
 		{
 			return;
 		}
