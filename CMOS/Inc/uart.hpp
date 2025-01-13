@@ -79,7 +79,7 @@ class UART: public I_Serial<uint8>
 		
 	public:
 		
-		virtual feedback init(uint32 baud, e_databits databits, e_stopbits stopbits, e_parity parity, uint8* rxBuffer, uint32 rxBufferSize, uint8* txBuffer, uint32 txBufferSize) = 0;
+		virtual feedback init(uint32 baud, e_databits databits, e_parity parity, e_stopbits stopbits, uint8* rxBuffer, uint32 rxBufferSize, uint8* txBuffer, uint32 txBufferSize) = 0;
 		virtual feedback deinit() = 0;
 		
 		uint8 rx() override;

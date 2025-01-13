@@ -332,6 +332,7 @@ class CMOS
 		uint16 event_create();
 		feedback event_emit(uint16 eventID);
 		feedback event_listen(uint16 eventID);
+		feedback event_unlisten();
 		feedback event_subscribe(uint16 eventID);
 		feedback event_unsubscribe();
 		feedback event_unsubscribe(uint16 eventID);

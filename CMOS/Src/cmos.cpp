@@ -827,6 +827,17 @@ feedback CMOS::event_listen(uint16 eventID)
 }
 
 
+feedback CMOS::event_unlisten()
+{
+	Thread& thread = m_thread[m_runningThreadID];
+	thread.m_listeningEventID = eventID_invalid;
+	thread.m_listeningEventOccured = false;
+	thread.m_triggeredWakeUpEventID = eventID_invalid;
+	
+	return(OK);
+}
+
+
 feedback CMOS::event_subscribe(uint16 eventID)
 {
 	//	Lock Semaphore

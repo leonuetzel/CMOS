@@ -33,7 +33,7 @@ UART::UART(void* txDataRegister)
 		m_eventID_dataReceived(CMOS::get().event_create()),
 		m_txDataRegister(txDataRegister)
 {
-	CMOS::get().event_subscribe(m_eventID_dataReceived);
+	
 }
 
 
@@ -65,6 +65,7 @@ CODE_RAM uint8 UART::rx()
 	{
 		cmos.sleep_untilEvent(m_eventID_dataReceived);
 	}
+	cmos.event_unlisten();
 	
 	
 	//	Return Data
