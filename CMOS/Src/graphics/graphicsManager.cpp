@@ -27,6 +27,7 @@ CODE_RAM void Graphics::manager()
 	
 	//	Start Display Driver
 	const uint16 eventID_frameFinished = m_displayDriver->get_eventID_frameFinished();
+	cmos.event_subscribe(eventID_frameFinished);
 	if(m_displayDriver->start() != OK)
 	{
 		return;
