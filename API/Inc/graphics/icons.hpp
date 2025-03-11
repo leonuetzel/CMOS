@@ -151,29 +151,34 @@ namespace Icons
 	namespace Logo_20x20
 	{
 		extern const Icon itn;
+		extern const Icon rhoenracing;
 	};
 	
 	
 	namespace Logo_40x40
 	{
 		extern const Icon itn;
+		extern const Icon rhoenracing;
 	};
 	
 	
 	namespace Logo_60x60
 	{
 		extern const Icon itn;
+		extern const Icon rhoenracing;
 	};
 	
 	
 	namespace Logo_80x80
 	{
 		extern const Icon itn;
+		extern const Icon rhoenracing;
 	};
 	
 	
 	namespace Logo_100x100
 	{
 		extern const Icon itn;
+		extern const Icon rhoenracing;
 	};
 };
