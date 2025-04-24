@@ -12,7 +12,7 @@ class I_DMA
 		
 		typedef void (*f_callback)();
 		
-		enum class e_priority
+		enum class e_priority: uint8
 		{
 			LOW				= 0,
 			MEDIUM		= 1,
@@ -20,14 +20,14 @@ class I_DMA
 			VERY_HIGH	= 3	
 		};
 		
-		enum class e_dataType
+		enum class e_dataType: uint8
 		{
 			UINT8			= 0,
 			UINT16		= 1,
 			UINT32		= 2
 		};
 		
-		enum class e_direction
+		enum class e_direction: uint8
 		{
 			PERIPHERAL_TO_MEMORY	= 0,
 			MEMORY_TO_PERIPHERAL	= 1,

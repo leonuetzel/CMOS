@@ -10,7 +10,7 @@ class I_I2C
 {
 	public:
 		
-		enum class e_mode
+		enum class e_mode: uint8
 		{
 			STANDARD_100KHZ						= 0,
 			FAST_400KHZ								= 1,
