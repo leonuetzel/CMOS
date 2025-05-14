@@ -83,7 +83,7 @@ CODE_RAM feedback Element::draw_rectangleFilledManual(Rect rectangle, Color colo
 {
 	if(rectangle.size.x <= 0 || rectangle.size.y <= 0)
 	{
-		return(OK);
+		return(FAIL);
 	}
 	
 	for(int32 y = 0; y < rectangle.size.y; y++)
@@ -774,10 +774,13 @@ CODE_RAM void Element::draw_background(Color color)
 	switch(m_frameType)
 	{
 		case e_frameType::RECTANGLE:
-			draw_rectangleFilled(*this, color);
-			break;
-			
+		{
+			draw_rectangleFilled(Rect(Vec2(0, 0), size), color);
+		}
+		break;
+		
 		case e_frameType::ROUND:
+		{
 			if(size.x == size.y)
 			{
 				draw_circleFilled(size / 2, size.x / 2 - 1, color);
@@ -804,9 +807,11 @@ CODE_RAM void Element::draw_background(Color color)
 				draw_circleFilled(center_1, x_div2 - 1, color, 180,	181);
 				draw_circleFilled(center_2, x_div2 - 1, color, 0,		181);
 			}
-			break;
+		}
+		break;
 			
 		case e_frameType::ROUNDED:
+		{
 			//	Rectangle Center
 			draw_rectangleFilled(	Rectangle(c_frameRoundness,								c_frameRoundness,								size.x - 2 * c_frameRoundness,	size.y - 2 * c_frameRoundness	), color);
 			
@@ -833,14 +838,20 @@ CODE_RAM void Element::draw_background(Color color)
 			
 			//	Circle Bottom Right
 			draw_circleFilled(		Vec2(			size.x - 1 - c_frameRoundness,	c_frameRoundness),							c_frameRoundness, color, 270,	91);
-			break;
-			
+		}
+		break;
+		
 		case e_frameType::NONE:
-			draw_rectangleFilled(*this, color);
-			break;
+		{
+			draw_rectangleFilled(Rect(Vec2(0, 0), size), color);
+		}
+		break;
 			
 		default:
-			break;
+		{
+			
+		}
+		break;
 	}
 }
 
@@ -1243,7 +1254,8 @@ CODE_RAM feedback Element::draw_rectangleFilled(Rectangle rectangle, Color color
 	}
 	
 	
-	//	Check if Rectangle is allowed to draw, else call Function with manual Pixel coloring
+	//	Check if Rectangle can be drawn by using the Graphic DMA - if not, use the manual Drawing Function
+	//	It can be drawn if the Rectangle is completely inside the Element (not crossing the Frame - depends on Frame Type)
 	Vec2 bottomLeft(position + rectangle.position);
 	Vec2 bottomRight(position + rectangle.position);
 	Vec2 topLeft(position + rectangle.position);
@@ -1257,15 +1269,6 @@ CODE_RAM feedback Element::draw_rectangleFilled(Rectangle rectangle, Color color
 		return(draw_rectangleFilledManual(rectangle, color));
 	}
 	
-	/*
-	Cache& cache = CMOS::get().get_cache();																																											//	Cache Maintenance
-	Thread& self = CMOS::get().get_thread();
-	self.set_priviledgeLevel(Thread::e_priviledgeLevel::ADMIN);
-	{
-		cache.DCache_invalidate((uint32*) &m_rectangle.data, m_rectangle.get_surface() * sizeof(Color));
-	}
-	self.set_priviledgeLevel(Thread::e_priviledgeLevel::USER);
-	*/
 	
 	rectangle.position += position + m_backBuffer[m_layer].position;
 	m_graphicAccelerator->draw_rectangleFull(m_backBuffer[m_layer], color, rectangle);

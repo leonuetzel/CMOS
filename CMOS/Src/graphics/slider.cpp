@@ -39,13 +39,29 @@ CODE_RAM void Slider::onUpdate(Element& element)
 	//	Normal Update
 	if(slider.m_updateRequested == true)
 	{
-		uint8 percentNew = slider.m_percentNewFromCallback;
-		if(slider.m_percentActualShown != percentNew || slider.m_rebuildRequested == true)
+		//	Take temporary Variables to avoid multiple Accesses
+		const uint8 percentActualShown = slider.m_percentActualShown;
+		const uint8 percentNew = slider.m_percentNewFromCallback;
+		
+		if(percentActualShown != percentNew || slider.m_rebuildRequested == true)
 		{
-			slider.draw_circleFilled(slider.get_center(slider.m_percentActualShown), c_radius, slider.m_colorBackground);
+			//	Delete old Circle
+			slider.draw_circleFilled(slider.get_center(percentActualShown), c_radius, slider.m_colorBackground);
+			
+			
+			//	Draw Middle Line
 			slider.draw_middleLine(percentNew);
+			
+			
+			//	Draw new Circle
 			slider.draw_circleFilled(slider.get_center(percentNew), c_radius, slider.m_colorCircle);
+			
+			
+			//	Draw Text
 			slider.draw_string(slider.m_text, e_align::TOP_CENTER, slider.m_font, slider.m_colorText);
+			
+			
+			//	Update Actual Shown Value
 			slider.m_percentActualShown = percentNew;
 		}
 	}
@@ -66,13 +82,25 @@ CODE_RAM void Slider::onCallback(Element& element)
 		
 		if(percent != slider.m_percentNewFromCallback)
 		{
+			//	Update Slider Value
 			slider.m_percentNewFromCallback = percent;
 			
+			
+			//	Execute User Callback first to be able to display Changes after
 			if(slider.m_function_onCallback != nullptr)
 			{
 				slider.m_function_onCallback(element);
 			}
+			
+			
+			//	Request Update to draw the new Value
 			slider.m_updateRequested = true;
+			
+			
+			//	Unlock Semaphore so that an Update can take Place
+			cmos.semaphore_unlock(&element);
+			cmos.sleep_ms(1);
+			cmos.semaphore_lock(&element);
 		}
 		
 		cmos.sleep_ms(10);
