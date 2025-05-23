@@ -559,12 +559,11 @@ CODE_RAM feedback Element::set_size(Vec2 newSize)
 
 
 
-CODE_RAM Vec2 Element::get_align(Vec2 boxSize, e_align align, uint32 stringLength, const Font& font)
+CODE_RAM Vec2 Element::get_align(e_align align, const String& string, const Font& font, int16 distanceFromBorder)
 {
 	Vec2 bottomLeftPosition(0, 0);
 	
-	const Vec2 fontSize = font.get_size();
-	Vec2 pixel(stringLength * fontSize.x, fontSize.y);
+	Vec2 stringBox = get_stringBox(string, font);
 	
 	uint8 x_align =  ((uint32) align) & 0x3;
 	uint8 y_align = (((uint32) align) & 0xC) >> 2;
@@ -575,19 +574,19 @@ CODE_RAM Vec2 Element::get_align(Vec2 boxSize, e_align align, uint32 stringLengt
 	{
 		case 0:
 		{
-			bottomLeftPosition.x = 1;
+			bottomLeftPosition.x = distanceFromBorder;
 		}
 		break;
 		
 		case 1:
 		{
-			bottomLeftPosition.x = (boxSize.x - pixel.x) / 2;
+			bottomLeftPosition.x = (size.x - stringBox.x) / 2;
 		}
 		break;
 		
 		case 2:
 		{
-			bottomLeftPosition.x = boxSize.x - 1 - pixel.x;
+			bottomLeftPosition.x = size.x - 1 - distanceFromBorder - stringBox.x;
 		}
 		break;
 		
@@ -604,19 +603,19 @@ CODE_RAM Vec2 Element::get_align(Vec2 boxSize, e_align align, uint32 stringLengt
 	{
 		case 0:
 		{
-			bottomLeftPosition.y = 1;
+			bottomLeftPosition.y = distanceFromBorder;
 		}
 		break;
 		
 		case 1:
 		{
-			bottomLeftPosition.y = (boxSize.y - pixel.y) / 2;
+			bottomLeftPosition.y = (size.y - stringBox.y) / 2;
 		}
 		break;
 		
 		case 2:
 		{
-			bottomLeftPosition.y = boxSize.y - 1 - pixel.y;
+			bottomLeftPosition.y = size.y - 1 - stringBox.y - distanceFromBorder;
 		}
 		break;
 		
@@ -637,38 +636,64 @@ CODE_RAM Vec2 Element::get_align(Vec2 boxSize, e_align align, uint32 stringLengt
 
 
 
-Vec2 Element::get_minimumDimension(uint32 stringLength, const Font& font, bool multiLine)
+Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLine, int16 distanceFromBorder)
 {
-	const Vec2 fontSize = font.get_size();
-	Vec2 minimumSize;
-	
-	
-	//	font.x + 1 Distance between two Signs + 2 Frame + 2 Distance to Frame
-	minimumSize.x = (stringLength * fontSize.x) + stringLength - 1 + 2 + 2;
-	
-	
-	//	font.y + 2 Frame + 2 Distance to Frame
-	minimumSize.y = fontSize.y + 2 + 2;
+	if(multiLine == false)
+	{
+		//	We need to read the Advance Width of every Character in the String
+		Vec2 stringBox(0, font.get_height());
+		for(auto& i: string)
+		{
+			if(font.isPrintable(i) == true)
+			{
+				stringBox.x += font.get_glyph(i).advanceWidth;
+			}
+		}
+		return(stringBox);
+	}
 	
 	
 	//	Multi Line Support
-	if(multiLine == true)
+	//	We need to read the Advance Width of every Character in the String until the Element Size is reached
+	//	So we now calculate the Line Width for every Line
+	Array<int16> lineWidth(0);
+	for(auto& i: string)
 	{
-		Graphics& graphics = Graphics::get();
-		const Vec2 displayDimensions = graphics.get_displayDimensions();
-		
-		
-		const uint32 charactersPerLine = (displayDimensions.x - 2 - 2 + 1) / (fontSize.x + 1);
-		minimumSize.x = (charactersPerLine * fontSize.x) + charactersPerLine - 1 + 2 + 2;
-		minimumSize.y = stringLength / charactersPerLine;
-		if(stringLength % charactersPerLine != 0)
+		if(font.isPrintable(i) == true)
 		{
-			minimumSize.y++;
+			//	Calculate the Line Width with one more Character
+			int16& lineWidthActual = lineWidth[lineWidth.get_size() - 1];
+			const int16 characterWidth = font.get_glyph(i).advanceWidth;
+			const int16 lineWidthNew = lineWidthActual + characterWidth;
+			
+			
+			//	Check if the new Line Width is too long
+			if(lineWidthNew > size.x - 2 * distanceFromBorder)
+			{
+				//	New Line Width is too long
+				//	Save the old Line Width and start a new Line
+				lineWidth += characterWidth;
+			}
+			else
+			{
+				//	New Line Width fits into the Element
+				//	Save the new Line Width
+				lineWidthActual = lineWidthNew;
+			}
 		}
-		minimumSize.y *= fontSize.y + 2;
-		minimumSize.y += 2;
 	}
-	return(minimumSize);
+	
+	//	Now we have the Line Width for every Line
+	//	The String Box is the maximum Line Width and the number of Lines times the Font Height
+	Vec2 stringBox(0, lineWidth.get_size() * font.get_height());
+	for(uint32 i = 0; i < lineWidth.get_size(); i++)
+	{
+		if(lineWidth[i] > stringBox.x)
+		{
+			stringBox.x = lineWidth[i];
+		}
+	}
+	return(stringBox);
 }
 
 
@@ -861,56 +886,125 @@ CODE_RAM void Element::draw_background(Color color)
 
 
 
-CODE_RAM feedback Element::draw_char(char character, Vec2 bottomLeftPosition, const Font& font, Color color)
+CODE_RAM feedback Element::draw_char(const Font::s_glyphDescription& glyphDescription, Vec2 bottomLeftPosition, Color color)
 {
-	const Vec2 characterSize = font.get_size();
-	bottomLeftPosition.x += 2;
-	
-	
-	const uint8* fontData = font.get_character(character);
+	//	Check for valid Data
+	const uint8* fontData = glyphDescription.data;
 	if(fontData == nullptr)
 	{
 		return(FAIL);
 	}
 	
 	
-	//	Draw
-	const int32 bytesPerColumn = characterSize.y / 8;
-	for(int16 x = 0; x < characterSize.x; x++)
+	//	Adjust the Bottom Left Position according to the Glyph Description
+	bottomLeftPosition += glyphDescription.box.position;
+	
+	
+	//	Data are one Bit per Pixel
+	//	The first Pixel is in the top-left Corner
+	//	Bit Order is from left to right with Bit 7 being the left-most Pixel
+	//	The Data is a real Bit-Stream, not necessarily being aligned to the Box Boundaries
+	const uint32 numberOfPixels = glyphDescription.box.size.x * glyphDescription.box.size.y;
+	uint32 pixelCounter = 0;
+	Vec2 pixelPosition(0, glyphDescription.box.size.y - 1);
+	while(pixelCounter < numberOfPixels)
 	{
-		for(int16 i = 0; i < bytesPerColumn; i++)
+		//	Calculate the next Bit
+		const uint32 byteCounter = pixelCounter / 8;
+		const uint32 bitCounter = 7 - (pixelCounter % 8);
+		
+		
+		//	Get Pixel Data
+		const bool bit = bit::isSet(fontData[byteCounter], bitCounter);
+		
+		
+		//	Draw Pixel
+		if(bit == true)
 		{
-			const uint8 data = fontData[x * bytesPerColumn + i];
-			for(int16 yInner = 0; yInner < 8; yInner++)
-			{
-				if(bit::isSet(data, yInner) == true)
-				{
-					set_pixel(Vec2(bottomLeftPosition.x + x, bottomLeftPosition.y + i * 8 + yInner), color);
-				}
-			}
+			set_pixel(bottomLeftPosition + pixelPosition, color);
 		}
+		
+		
+		//	Update Pixel Position
+		pixelPosition.x++;
+		if(pixelPosition.x >= glyphDescription.box.size.x)
+		{
+			pixelPosition.x = 0;
+			pixelPosition.y--;
+		}
+		pixelCounter++;
 	}
 	return(OK);
 }
 
 
-CODE_RAM feedback Element::draw_string(String string, Vec2 bottomLeftPosition, const Font& font, Color color, bool multiLine)
+CODE_RAM feedback Element::draw_char(char character, Vec2 bottomLeftPosition, const Font& font, Color color)
 {
-	const Vec2 letterSize = font.get_size();
+	//	Non-printable Characters wont be printed
+	if(font.isPrintable(character) == false)
+	{
+		return(FAIL);
+	}
 	
+	
+	//	Get Glyph Description
+	const Font::s_glyphDescription glyphDescription = font.get_glyph(character);
+	
+	
+	//	Check for valid Data
+	const uint8* fontData = glyphDescription.data;
+	if(fontData == nullptr)
+	{
+		return(FAIL);
+	}
+	
+	
+	return(draw_char(glyphDescription, bottomLeftPosition, color));
+}
+
+
+CODE_RAM feedback Element::draw_string(String string, Vec2 bottomLeftPosition, const Font& font, Color color)
+{
 	for(uint32 i = 0; i < string.get_size(); i++)
 	{
-		draw_char(string[i], bottomLeftPosition, font, color);
-		bottomLeftPosition.x += letterSize.x;
+		//	Get Character to draw
+		const char character = string[i];
+		
+		
+		//	Non-printable Characters wont be drawn
+		if(font.isPrintable(character) == false)
+		{
+			continue;
+		}
+		
+		
+		//	Get Glyph Description for the Advance Width
+		const Font::s_glyphDescription glyphDescription = font.get_glyph(character);
+		
+		
+		//	Draw Character
+		draw_char(glyphDescription, bottomLeftPosition, color);
+		
+		
+		//	Update the Bottom Left Position
+		//	Advance Width is the distance to the next Character
+		bottomLeftPosition.x += glyphDescription.advanceWidth;
 	}
 	return(OK);
 }
 
 
-CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, const Font& font)
+CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, const Font& font, int16 distanceFromBorder)
 {
+	//	Element too small
+	if(size.x <= 2 * distanceFromBorder)
+	{
+		return(Array<String>());
+	}
+	
+	
 	Array<String> output;
-	if(get_minimumDimension(string.get_size(), font).x > size.x)
+	if(get_stringBox(string, font).x > size.x)
 	{
 		//	Multi-Line needed
 		
@@ -934,7 +1028,7 @@ CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, con
 				
 				
 				//	Check if it fits into the Line
-				if(get_minimumDimension(line.get_size(), font).x > size.x)
+				if(get_stringBox(line, font).x > size.x - 2 * distanceFromBorder)
 				{
 					//	It doesnt fit - we need to remove the last Word added
 					//	Check if we have more than one Word in the Line already
@@ -949,9 +1043,16 @@ CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, con
 						
 						
 						//	Erase a single Character from that Word until it fits
-						while(get_minimumDimension(line.get_size(), font).x > size.x)
+						while(get_stringBox(line, font).x > size.x - 2 * distanceFromBorder)
 						{
-							line.eraseFromEnd(1);
+							if(line.get_size() > 0)
+							{
+								line.eraseFromEnd(1);
+							}
+							else
+							{
+								break;
+							}
 						}
 						
 						
@@ -986,16 +1087,16 @@ CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, con
 }
 
 
-CODE_RAM feedback Element::draw_string(String string, e_align_x align_x, uint32 y, const Font& font, Color color, bool multiLine)
+CODE_RAM feedback Element::draw_string(String string, e_align_x align_x, uint32 y, const Font& font, Color color, bool multiLine, int16 distanceFromBorder)
 {
-	if(multiLine == true && get_minimumDimension(string.get_size(), font).x > size.x)
+	if(multiLine == true && get_stringBox(string, font).x > size.x - 2 * distanceFromBorder)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font);
+		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
 		
 		const uint32 numberOfLines = lines.get_size();
 		for(uint32 i = 0; i < numberOfLines; i++)
 		{
-			const uint32 y_line = y - i * (font.get_size().y + 2);
+			const uint32 y_line = y - i * font.get_height();
 			draw_string(lines[i], align_x, y_line, font, color);
 		}
 	}
@@ -1003,24 +1104,24 @@ CODE_RAM feedback Element::draw_string(String string, e_align_x align_x, uint32 
 	{
 		Vec2 bottomLeftPosition(0, y);
 		
-		bottomLeftPosition.x = get_align(size, (e_align) align_x, string.get_size(), font).x;
+		bottomLeftPosition.x = get_align((e_align) align_x, string, font, distanceFromBorder).x;
 		return(draw_string(string, bottomLeftPosition, font, color));
 	}
 	return(OK);
 }
 
 
-CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 x, const Font& font, Color color, bool multiLine)
+CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 x, const Font& font, Color color, bool multiLine, int16 distanceFromBorder)
 {
-	if(multiLine == true && get_minimumDimension(string.get_size(), font).x > size.x)
+	if(multiLine == true && get_stringBox(string, font).x > size.x)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font);
+		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
 		const uint32 numberOfLines = lines.get_size();
 		
 		
 		//	Get starting Y Position for the first Line
 		Vec2 bottomLeftPosition(x, 0);
-		bottomLeftPosition.y = get_align(size, (e_align) align_y, string.get_size(), font).y;
+		bottomLeftPosition.y = get_align((e_align) align_y, string, font, distanceFromBorder).y;
 		
 		
 		//	We need to distinguish between Aligning Styles here
@@ -1031,18 +1132,18 @@ CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
 					draw_string(lines[i], bottomLeftPosition, font, color);
-					bottomLeftPosition.y -= font.get_size().y + 2;
+					bottomLeftPosition.y -= font.get_height();
 				}
 			}
 			break;
 			
 			case e_align_y::CENTER:
 			{
-				bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * (font.get_size().y + 2);
+				bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * font.get_height();
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
 					draw_string(lines[i], bottomLeftPosition, font, color);
-					bottomLeftPosition.y -= font.get_size().y + 2;
+					bottomLeftPosition.y -= font.get_height();
 				}
 			}
 			break;
@@ -1052,7 +1153,7 @@ CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
 					draw_string(lines[numberOfLines - i - 1], bottomLeftPosition, font, color);
-					bottomLeftPosition.y += font.get_size().y + 2;
+					bottomLeftPosition.y += font.get_height();
 				}
 			}
 			break;
@@ -1068,23 +1169,23 @@ CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 
 	{
 		Vec2 bottomLeftPosition(x, 0);
 		
-		bottomLeftPosition.y = get_align(size, (e_align) align_y, string.get_size(), font).y;
+		bottomLeftPosition.y = get_align((e_align) align_y, string, font, distanceFromBorder).y;
 		return(draw_string(string, bottomLeftPosition, font, color));
 	}
 	return(OK);
 }
 
 
-CODE_RAM feedback Element::draw_string(String string, e_align align, const Font& font, Color color, bool multiLine)
+CODE_RAM feedback Element::draw_string(String string, e_align align, const Font& font, Color color, bool multiLine, int16 distanceFromBorder)
 {
-	if(multiLine == true && get_minimumDimension(string.get_size(), font).x > size.x)
+	if(multiLine == true && get_stringBox(string, font).x > size.x)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font);
+		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
 		const uint32 numberOfLines = lines.get_size();
 		
 		
 		//	Get starting Y Position for the first Line
-		Vec2 bottomLeftPosition = get_align(size, align, string.get_size(), font);
+		Vec2 bottomLeftPosition = get_align(align, string, font, distanceFromBorder);
 		
 		
 		//	We need to distinguish between Aligning Styles here
@@ -1092,34 +1193,34 @@ CODE_RAM feedback Element::draw_string(String string, e_align align, const Font&
 		{
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(size, align, lines[i].get_size(), font).x;
+				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
 				draw_string(lines[i], bottomLeftPosition, font, color);
-				bottomLeftPosition.y -= font.get_size().y + 2;
+				bottomLeftPosition.y -= font.get_height();
 			}
 		}
 		if(align == e_align::CENTER_LEFT || align == e_align::CENTER || align == e_align::CENTER)
 		{
-			bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * (font.get_size().y + 2);
+			bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * font.get_height();
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(size, align, lines[i].get_size(), font).x;
+				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
 				draw_string(lines[i], bottomLeftPosition, font, color);
-				bottomLeftPosition.y -= font.get_size().y + 2;
+				bottomLeftPosition.y -= font.get_height();
 			}
 		}
 		if(align == e_align::BOTTOM_LEFT || align == e_align::BOTTOM_CENTER || align == e_align::BOTTOM_RIGHT)
 		{
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(size, align, lines[i].get_size(), font).x;
+				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
 				draw_string(lines[numberOfLines - i - 1], bottomLeftPosition, font, color);
-				bottomLeftPosition.y += font.get_size().y + 2;
+				bottomLeftPosition.y += font.get_height();
 			}
 		}
 	}
 	else
 	{
-		const Vec2 bottomLeftPosition = get_align(size, align, string.get_size(), font);
+		const Vec2 bottomLeftPosition = get_align(align, string, font, distanceFromBorder);
 		return(draw_string(string, bottomLeftPosition, font, color));
 	}
 	return(OK);

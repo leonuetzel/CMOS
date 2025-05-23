@@ -123,7 +123,6 @@ class Textbox: public Element
 		
 		constexpr inline uint32 get_lineTouched() const;
 		constexpr inline const Font& get_font() const;
-		constexpr inline uint32 get_charactersPerLine() const;
 		inline const String& get_text(uint32 lineNumber);
 		inline bool is_touchable(uint32 lineNumber) const;
 		inline Color get_colorText(uint32 lineNumber) const;
@@ -193,8 +192,7 @@ constexpr inline bool Textbox::isLineInScrollingWindow(uint32 lineNumber) const
 
 constexpr inline int16 Textbox::get_lineCoordinate(uint32 lineNumber) const
 {
-	const Vec2 fontSize = m_font.get_size();
-	return(size.y - 1 - ((int16) lineNumber + 1) * (fontSize.y + c_lineSpacing) + m_scrollingInPixels);
+	return(size.y - 1 - ((int16) lineNumber + 1) * (m_font.get_height() + c_lineSpacing) + m_scrollingInPixels);
 }
 
 
@@ -208,8 +206,7 @@ constexpr inline uint32 Textbox::get_line(int16 y) const
 	
 	
 	//	Calculate Line Number
-	const Vec2 fontSize = m_font.get_size();
-	const uint32 lineNumber = (size.y - 1 - y + m_scrollingInPixels) / (fontSize.y + c_lineSpacing);
+	const uint32 lineNumber = (size.y - 1 - y + m_scrollingInPixels) / (m_font.get_height() + c_lineSpacing);
 	
 	
 	//	If Line is not displayable anymore, return invalid
@@ -223,8 +220,7 @@ constexpr inline uint32 Textbox::get_line(int16 y) const
 
 constexpr inline int16 Textbox::get_lineHeight() const
 {
-	const Vec2 fontSize = m_font.get_size();
-	return(fontSize.y + c_lineSpacing);
+	return(m_font.get_height() + c_lineSpacing);
 }
 
 
@@ -332,13 +328,6 @@ constexpr inline uint32 Textbox::get_lineTouched() const
 constexpr inline const Font& Textbox::get_font() const
 {
 	return(m_font);
-}
-
-
-constexpr inline uint32 Textbox::get_charactersPerLine() const
-{
-	const Vec2 fontSize = m_font.get_size();
-	return((size.x - 2) / (fontSize.x + 1));
 }
 
 

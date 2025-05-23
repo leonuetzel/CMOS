@@ -107,7 +107,7 @@ Keyboard::Keyboard()
 				Element::e_frameType::ROUNDED
 			),
 			i.primary_text,
-			Fonts::CalibriLight_12x16,
+			Fonts::CalibriLight16,
 			Colors::white,
 			Colors::black,
 			Colors::silver,
@@ -316,7 +316,7 @@ void Keyboard::update(Element& element)
 {
 	element.draw_background(Colors::black);
 	element.draw_frame(Colors::silver),
-	element.draw_string(Keyboard::get().m_buffer, Element::e_align::CENTER, Fonts::CalibriLight_12x16, Colors::white);
+	element.draw_string(Keyboard::get().m_buffer, Element::e_align::CENTER, Fonts::CalibriLight16, Colors::white);
 }
 
 

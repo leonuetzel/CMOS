@@ -299,7 +299,7 @@ CODE_RAM void Textbox::drawLine(uint32 lineNumber)
 		
 		
 		//	Draw Text
-		const Vec2 bottomLeftPosition(get_align(size, (e_align) e_align_x::LEFT, line.text.get_size(), m_font).x + line.xOffset, y);
+		const Vec2 bottomLeftPosition(get_align((e_align) e_align_x::LEFT, line.text, m_font, defaultTextDistanceFromBorder).x + line.xOffset, y - m_font.get_minimumPositionY());
 		draw_string(line.text, bottomLeftPosition, m_font, colorText);
 	}
 	else
@@ -307,8 +307,8 @@ CODE_RAM void Textbox::drawLine(uint32 lineNumber)
 		//	If Text changed, we just draw the old Text in Background Color and then draw the new Text
 		//	This Way we reduce the Number of Memory Accesses and therefore the Time needed to draw
 		const int16 scrollingDifference = line.displayed.scrollingInPixels - m_scrollingInPixels;
-		const Vec2 bottomLeftPositionNew(get_align(size, (e_align) e_align_x::LEFT, line.text.get_size(), m_font).x + line.xOffset, y);
-		const Vec2 bottomLeftPositionOld(bottomLeftPositionNew.x, bottomLeftPositionNew.y + scrollingDifference);
+		const Vec2 bottomLeftPositionNew(get_align((e_align) e_align_x::LEFT, line.text, m_font, defaultTextDistanceFromBorder).x + line.xOffset, y - m_font.get_minimumPositionY());
+		const Vec2 bottomLeftPositionOld(bottomLeftPositionNew.x, bottomLeftPositionNew.y - m_font.get_minimumPositionY() + scrollingDifference);
 		
 		draw_string(line.displayed.text, bottomLeftPositionOld, m_font, colorLineBackground);
 		draw_string(line.text, bottomLeftPositionNew, m_font, colorText);

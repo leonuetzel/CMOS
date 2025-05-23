@@ -52,6 +52,15 @@ class Button: public Element
 		
 		
 		
+	protected:
+	
+		const Font* m_font;
+		Color m_colorText;
+		
+		
+		
+		
+		
 	public:
 		
 		inline Button(Element element, String text, const Font& font, Color colorText, Color colorBackground, Color colorFrame, Color colorPressed, uint32 pressTime_ms);
@@ -140,7 +149,10 @@ inline Button::Button(Element element, String text, const Font& font, Color colo
 		m_function_onChangeLayer(Element::get_function_onChangeLayer()),
 		m_function_onChangePosition(Element::get_function_onChangePosition()),
 		m_function_onChangeSize(Element::get_function_onChangeSize()),
-		m_function_onChangePageActual(Element::get_function_onChangePageActual())
+		m_function_onChangePageActual(Element::get_function_onChangePageActual()),
+		
+		m_font(&font),
+		m_colorText(colorText)
 {
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
@@ -306,6 +318,7 @@ inline void Button::set_text(String text)
 
 constexpr inline void Button::set_font(const Font& font)
 {
+	m_font = &font;
 	if(m_textNew.font != &font)
 	{
 		m_textNew.font = &font;
@@ -316,6 +329,7 @@ constexpr inline void Button::set_font(const Font& font)
 
 constexpr inline void Button::set_colorText(Color color)
 {
+	m_colorText = color;
 	if(m_textNew.color != color)
 	{
 		m_textNew.color = color;

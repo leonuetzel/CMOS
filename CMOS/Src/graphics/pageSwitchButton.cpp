@@ -16,40 +16,16 @@
 /*                      						Private	  			 						 						 */
 /*****************************************************************************/
 
-CODE_RAM void PageSwitchButton::writePageNumber(uint8 pageNumber)
+CODE_RAM void PageSwitchButton::writeText()
 {
-	//	Calculate maximum Number of Characters that fit in the Element
-	const Vec2 fontSize = get_font().get_size();
-	const uint32 numberOfCharacters = get_size().x / fontSize.x - 2;
-	
-	
 	//	Convert Page Number to String
-	String pageNumberAsString(Graphics::get().get_pageActual());
+	const String pageNumberAsString(Graphics::get().get_pageActual());
 	
 	
-	//	Check if we can write the String we want ('<' + n Spaces + PageNumber + n Spaces + '>')
-	if(numberOfCharacters < pageNumberAsString.get_size() + 2)
-	{
-		return;
-	}
-	
-	
-	//	Calculate Number of Spaces
-	uint32 numberOfSpaces = (numberOfCharacters - pageNumberAsString.get_size() - 2) / 2;
-	
-	
-	//	Assemble String
-	const Array<char> spaces(' ', numberOfSpaces);
-	
-	String text("<");
-	text += spaces;
-	text += pageNumberAsString;
-	text += spaces;
-	text += '>';
-	
-	
-	//	Set Text in Class "Button"
-	set_text(text);
+	//	Draw Text
+	draw_string("<", e_align::CENTER_LEFT, *m_font, m_colorText);
+	draw_string(">", e_align::CENTER_RIGHT, *m_font, m_colorText);
+	draw_string(pageNumberAsString, e_align::CENTER, *m_font, m_colorText);
 }
 
 
@@ -166,7 +142,7 @@ CODE_RAM void PageSwitchButton::onChangePageActual(Element& element)
 	
 	const uint8 pageActual = Graphics::get().get_pageActual();
 	pageSwitchButton.set_page(pageActual);
-	pageSwitchButton.writePageNumber(pageActual);
+	pageSwitchButton.writeText();
 	
 	if(pageSwitchButton.m_function_onChangePageActual != nullptr)
 	{

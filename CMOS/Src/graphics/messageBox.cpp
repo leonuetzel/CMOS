@@ -20,7 +20,7 @@ void MessageBox::update(Element& element)
 {
 	if(m_messageBox != nullptr)
 	{
-		element.draw_string(m_messageBox->m_message, Element::e_align::CENTER, Fonts::CalibriLight_18x24, Colors::white, true);
+		element.draw_string(m_messageBox->m_message, Element::e_align::CENTER, Fonts::CalibriLight24, Colors::white, true);
 	}
 }
 
@@ -115,7 +115,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"OK",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -147,7 +147,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"OK",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -172,7 +172,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Cancel",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -204,7 +204,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Retry",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -229,7 +229,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Cancel",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -261,7 +261,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Retry",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -286,7 +286,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Cancel",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -311,7 +311,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Continue",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -343,7 +343,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Yes",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -368,7 +368,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"No",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -400,7 +400,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Yes",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -425,7 +425,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"No",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -450,7 +450,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 					Element::e_frameType::ROUNDED
 				),
 				"Cancel",
-				Fonts::CalibriLight_18x24,
+				Fonts::CalibriLight24,
 				Colors::white,
 				Colors::black,
 				Colors::silver,
@@ -472,7 +472,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 	
 	
 	//	Message Element
-	const Vec2 textSize = Element::get_minimumDimension(message.get_size(), Fonts::CalibriLight_18x24, true);
+	const Vec2 textSize = Vec2(displaySize / 5);
 	const Vec2 textPosition = Vec2(displaySize.x / 2, (2 * displaySize.y) / 3) - textSize / 2;
 	Element* text = new Element
 	(

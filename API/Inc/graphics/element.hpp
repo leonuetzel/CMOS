@@ -50,6 +50,8 @@ class Element	:	protected Rect
 		typedef void (*f_element)(Element& element);
 		typedef Color (*f_color)(Vec2 pixelPosition, Vec2 rectangleSize);
 		
+		static constexpr int16 defaultTextDistanceFromBorder = 2;
+		
 		
 		
 		
@@ -161,21 +163,22 @@ class Element	:	protected Rect
 		inline Graphics::e_touchEvent get_touchEvent() const;
 		constexpr inline Vec2 get_touchPosition() const;
 		constexpr inline bool get_touchValid() const;
-		static Vec2 get_align(Vec2 boxSize, e_align align, uint32 stringLength, const Font& font);
+		Vec2 get_align(e_align align, const String& string, const Font& font, int16 distanceFromBorder);
 		
-		static Vec2 get_minimumDimension(uint32 stringLength, const Font& font, bool multiLine = false);
+		Vec2 get_stringBox(const String& string, const Font& font, bool multiLine = false, int16 distanceFromBorder = defaultTextDistanceFromBorder);
 		
 		feedback set_pixel(Vec2 pixelPosition, Color color);
 		inline void clear();
 		void draw_frame(Color color);
 		void draw_background(Color color);
 		
+		feedback draw_char(const Font::s_glyphDescription& glyphDescription, Vec2 bottomLeftPosition, Color color);
 		feedback draw_char(	 				char character,	Vec2 bottomLeftPosition, 			const Font& font, Color color);
-		feedback draw_string(				String string,	Vec2 bottomLeftPosition, 			const Font& font, Color color, bool multiLine = false);
-		Array<String> splitStringToMultiLine(const String& string,								const Font& font);
-		feedback draw_string(String string,	e_align_x align_x, uint32 y, 					const Font& font, Color color, bool multiLine = false);
-		feedback draw_string(String string,	e_align_y align_y, uint32 x, 					const Font& font, Color color, bool multiLine = false);
-		feedback draw_string(String string,	e_align align,												const Font& font, Color color, bool multiLine = false);
+		feedback draw_string(				String string,	Vec2 bottomLeftPosition, 			const Font& font, Color color);
+		Array<String> splitStringToMultiLine(const String& string,								const Font& font,																				int16 distanceFromBorder = defaultTextDistanceFromBorder);
+		feedback draw_string(String string,	e_align_x align_x, uint32 y, 					const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);
+		feedback draw_string(String string,	e_align_y align_y, uint32 x, 					const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);
+		feedback draw_string(String string,	e_align align,												const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);
 		
 		void draw_icon(const Icon& icon, Vec2 bottomLeftPosition);
 		

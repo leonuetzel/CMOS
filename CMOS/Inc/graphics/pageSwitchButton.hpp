@@ -39,7 +39,7 @@ class PageSwitchButton: public Button
 		
 		
 		//	Member Functions
-		void writePageNumber(uint8 pageNumber);
+		void writeText();
 		
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
@@ -126,7 +126,7 @@ inline PageSwitchButton::PageSwitchButton(Button button)
 	Button::set_function_onChangeSize(onChangeSize);
 	Button::set_function_onChangePageActual(onChangePageActual);
 	
-	writePageNumber(Graphics::get().get_pageActual());
+	writeText();
 }
 
 
