@@ -15,7 +15,6 @@ namespace Fonts
 	extern const Font CalibriLight32;
 	extern const Font CalibriLight40;
 	extern const Font CalibriLight64;
-	
 	extern const Font CelsiusFlower12;
 	extern const Font CelsiusFlower16;
 	extern const Font CelsiusFlower20;
@@ -23,7 +22,6 @@ namespace Fonts
 	extern const Font CelsiusFlower32;
 	extern const Font CelsiusFlower40;
 	extern const Font CelsiusFlower64;
-	
 	extern const Font MagneticFree12;
 	extern const Font MagneticFree16;
 	extern const Font MagneticFree20;
@@ -31,7 +29,6 @@ namespace Fonts
 	extern const Font MagneticFree32;
 	extern const Font MagneticFree40;
 	extern const Font MagneticFree64;
-	
 	extern const Font RavishingFree12;
 	extern const Font RavishingFree16;
 	extern const Font RavishingFree20;

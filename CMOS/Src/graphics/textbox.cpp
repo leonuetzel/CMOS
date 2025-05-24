@@ -308,7 +308,7 @@ CODE_RAM void Textbox::drawLine(uint32 lineNumber)
 		//	This Way we reduce the Number of Memory Accesses and therefore the Time needed to draw
 		const int16 scrollingDifference = line.displayed.scrollingInPixels - m_scrollingInPixels;
 		const Vec2 bottomLeftPositionNew(get_align((e_align) e_align_x::LEFT, line.text, m_font, defaultTextDistanceFromBorder).x + line.xOffset, y - m_font.get_minimumPositionY());
-		const Vec2 bottomLeftPositionOld(bottomLeftPositionNew.x, bottomLeftPositionNew.y - m_font.get_minimumPositionY() + scrollingDifference);
+		const Vec2 bottomLeftPositionOld(bottomLeftPositionNew.x, bottomLeftPositionNew.y + scrollingDifference);
 		
 		draw_string(line.displayed.text, bottomLeftPositionOld, m_font, colorLineBackground);
 		draw_string(line.text, bottomLeftPositionNew, m_font, colorText);

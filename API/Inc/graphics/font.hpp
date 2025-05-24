@@ -17,6 +17,9 @@ class Font
 			uint8* data;
 		}s_glyphDescription;
 		
+		static constexpr uint8 printableStart	= 0x20;
+		static constexpr uint8 printableEnd		= 0x7E;
+		
 		
 		
 		
@@ -31,6 +34,7 @@ class Font
 		const uint8 m_height;
 		const int8 m_minimumPositionY;
 		const uint8* m_glyphData;
+		const uint8* m_glyphAdvanceWidth;
 		const uint8* m_glyphDescription;
 		
 		
@@ -51,13 +55,14 @@ class Font
 		
 	public:
 		
-		constexpr inline Font(uint8 height, int8 minimumPositionY, const uint8* glyphData, const uint8* glyphDescription);
+		constexpr inline Font(uint8 height, int8 minimumPositionY, const uint8* glyphData, const uint8* glyphAdvanceWidth, const uint8* glyphDescription);
 		inline ~Font();
 		
 		constexpr inline uint8 get_height() const;
 		constexpr inline int8 get_minimumPositionY() const;
+		constexpr inline uint8 get_advanceWidth(char character) const;
 		constexpr inline const s_glyphDescription get_glyph(char character) const;
-		constexpr inline bool isPrintable(char character) const;
+		static constexpr inline bool isPrintable(char character);
 		
 		inline bool operator==(const Font& font) const;
 		inline bool operator!=(const Font& font) const;
@@ -93,10 +98,11 @@ class Font
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
-constexpr inline Font::Font(uint8 height, int8 minimumPositionY, const uint8* glyphData, const uint8* glyphDescription)
+constexpr inline Font::Font(uint8 height, int8 minimumPositionY, const uint8* glyphData, const uint8* glyphAdvanceWidth, const uint8* glyphDescription)
 	:	m_height(height),
 		m_minimumPositionY(minimumPositionY),
 		m_glyphData(glyphData),
+		m_glyphAdvanceWidth(glyphAdvanceWidth),
 		m_glyphDescription(glyphDescription)
 {
 	
@@ -126,6 +132,16 @@ constexpr int8 Font::get_minimumPositionY() const
 }
 
 
+constexpr	inline uint8 Font::get_advanceWidth(char character) const
+{
+	if(isPrintable(character) == false)
+	{
+		return(0);
+	}
+	return(m_glyphAdvanceWidth[character - printableStart]);
+}
+
+
 constexpr	inline const Font::s_glyphDescription Font::get_glyph(char character) const
 {
 	s_glyphDescription glyphDescription{0, Rect(0, 0, 0, 0), nullptr};
@@ -136,28 +152,27 @@ constexpr	inline const Font::s_glyphDescription Font::get_glyph(char character) 
 	
 	
 	//	Glyph Table starts with the Data for Glyph 0x20
-	character -= 0x20;
+	character -= printableStart;
 	
 	
 	//	Get Glyph Data
 	//	They are formatted in the Byte Stream as
 	//	Byte-Stream[0] = Bitmap Index MSB
 	//	Byte-Stream[1] = Bitmap Index LSB
-	//	Byte-Stream[2] = Advance Width
-	//	Byte-Stream[3] = Box Position X
-	//	Byte-Stream[4] = Box Position Y
-	//	Byte-Stream[5] = Box Size X
-	//	Byte-Stream[6] = Box Size Y
-	const uint8* glyphDescriptionByteStream = m_glyphDescription + 7 * character;
+	//	Byte-Stream[2] = Box Position X
+	//	Byte-Stream[3] = Box Position Y
+	//	Byte-Stream[4] = Box Size X
+	//	Byte-Stream[5] = Box Size Y
+	const uint8* glyphDescriptionByteStream = m_glyphDescription + 6 * character;
 	
 	const uint16 bitmapIndex = (glyphDescriptionByteStream[0] << 8) | glyphDescriptionByteStream[1];
 	glyphDescription.data = (uint8*) m_glyphData + bitmapIndex;
 	
-	glyphDescription.advanceWidth = glyphDescriptionByteStream[2];
-	glyphDescription.box.position.x = (int8) glyphDescriptionByteStream[3];
-	glyphDescription.box.position.y = (int8) glyphDescriptionByteStream[4];
-	glyphDescription.box.size.x = glyphDescriptionByteStream[5];
-	glyphDescription.box.size.y = glyphDescriptionByteStream[6];
+	glyphDescription.advanceWidth = m_glyphAdvanceWidth[(uint8) character];
+	glyphDescription.box.position.x = (int8) glyphDescriptionByteStream[2];
+	glyphDescription.box.position.y = (int8) glyphDescriptionByteStream[3];
+	glyphDescription.box.size.x = glyphDescriptionByteStream[4];
+	glyphDescription.box.size.y = glyphDescriptionByteStream[5];
 	
 	
 	//	Read Bitmap Index (the Index where the Glyph Data starts in the Data Array)
@@ -168,9 +183,9 @@ constexpr	inline const Font::s_glyphDescription Font::get_glyph(char character) 
 }
 
 
-constexpr	inline bool Font::isPrintable(char character) const
+constexpr	inline bool Font::isPrintable(char character)
 {
-	if(character < 0x20 || character > 0x7E)
+	if(character < printableStart || character > printableEnd)
 	{
 		return(false);
 	}

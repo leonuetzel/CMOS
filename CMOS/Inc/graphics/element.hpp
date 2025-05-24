@@ -175,7 +175,7 @@ class Element	:	protected Rect
 		feedback draw_char(const Font::s_glyphDescription& glyphDescription, Vec2 bottomLeftPosition, Color color);
 		feedback draw_char(	 				char character,	Vec2 bottomLeftPosition, 			const Font& font, Color color);
 		feedback draw_string(				String string,	Vec2 bottomLeftPosition, 			const Font& font, Color color);
-		Array<String> splitStringToMultiLine(const String& string,								const Font& font,																				int16 distanceFromBorder = defaultTextDistanceFromBorder);
+		Array<uint32> splitStringToMultiLine(const String& string,								const Font& font,																				int16 distanceFromBorder = defaultTextDistanceFromBorder);
 		feedback draw_string(String string,	e_align_x align_x, uint32 y, 					const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);
 		feedback draw_string(String string,	e_align_y align_y, uint32 x, 					const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);
 		feedback draw_string(String string,	e_align align,												const Font& font, Color color, bool multiLine = false, 	int16 distanceFromBorder = defaultTextDistanceFromBorder);

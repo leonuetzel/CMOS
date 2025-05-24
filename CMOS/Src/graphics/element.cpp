@@ -644,10 +644,7 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 		Vec2 stringBox(0, font.get_height());
 		for(auto& i: string)
 		{
-			if(font.isPrintable(i) == true)
-			{
-				stringBox.x += font.get_glyph(i).advanceWidth;
-			}
+			stringBox.x += font.get_advanceWidth(i);
 		}
 		return(stringBox);
 	}
@@ -663,7 +660,7 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 		{
 			//	Calculate the Line Width with one more Character
 			int16& lineWidthActual = lineWidth[lineWidth.get_size() - 1];
-			const int16 characterWidth = font.get_glyph(i).advanceWidth;
+			const int16 characterWidth = font.get_advanceWidth(i);
 			const int16 lineWidthNew = lineWidthActual + characterWidth;
 			
 			
@@ -994,96 +991,46 @@ CODE_RAM feedback Element::draw_string(String string, Vec2 bottomLeftPosition, c
 }
 
 
-CODE_RAM Array<String> Element::splitStringToMultiLine(const String& string, const Font& font, int16 distanceFromBorder)
+CODE_RAM Array<uint32> Element::splitStringToMultiLine(const String& string, const Font& font, int16 distanceFromBorder)
 {
 	//	Element too small
 	if(size.x <= 2 * distanceFromBorder)
 	{
-		return(Array<String>());
+		return(Array<uint32>());
 	}
 	
 	
-	Array<String> output;
-	if(get_stringBox(string, font).x > size.x)
+	//	Calculate the maximum Line Width
+	const uint32 maxUsablePixelPerLine = size.x - 2 * distanceFromBorder;
+	
+	
+	//	Now we split the String into Lines
+	//	lineLengths represents the Number of Characters of that Line
+	Array<uint32> charactersPerLine(0);
+	uint32 lineLengthInPixel = 0;
+	for(auto& i: string)
 	{
-		//	Multi-Line needed
+		//	Get the Advance Width of the Character
+		const uint8 advanceWidthCharacter = font.get_advanceWidth(i);
 		
 		
-		//	Explode String into Words
-		Array<String> words(string.explode(' '));
-		
-		
-		String line;
-		while(1)
+		//	Check if the Character fits into the current Line
+		uint32& charactersPerActualLine = charactersPerLine[charactersPerLine.get_size() - 1];
+		if(lineLengthInPixel + advanceWidthCharacter > maxUsablePixelPerLine)
 		{
-			//	Put as much Words into a Line as possible
-			if(words.get_size() > 0)
-			{
-				//	Append a Word to the line
-				if(line.get_size() > 0)
-				{
-					line += ' ';
-				}
-				line += words[0];
-				
-				
-				//	Check if it fits into the Line
-				if(get_stringBox(line, font).x > size.x - 2 * distanceFromBorder)
-				{
-					//	It doesnt fit - we need to remove the last Word added
-					//	Check if we have more than one Word in the Line already
-					if(line.contains(' ') == true)
-					{
-						//	We have more than one Word - remove the last one and its corresponding Whitespace
-						line.eraseFromEnd(words[0].get_size() + 1);
-					}
-					else
-					{
-						//	We have only one Word, so we need to split it up
-						
-						
-						//	Erase a single Character from that Word until it fits
-						while(get_stringBox(line, font).x > size.x - 2 * distanceFromBorder)
-						{
-							if(line.get_size() > 0)
-							{
-								line.eraseFromEnd(1);
-							}
-							else
-							{
-								break;
-							}
-						}
-						
-						
-						//	Erase the same Number of Characters from the Word in the overall Word Buffer
-						words[0].erase(line.get_size());
-					}
-					
-					
-					//	Now we know that the Line is full - put it into the Output Buffer
-					output += line;
-					line.erase();
-				}
-				else
-				{
-					//	It fits into the Line - remove the Word from the overall Word Buffer
-					words.erase(0);
-				}
-			}
-			else
-			{
-				output += line;
-				line.erase();
-				break;
-			}
+			//	Character does not fit into the current Line
+			//	So we need to start a new Line
+			charactersPerLine += 1;
+			lineLengthInPixel = advanceWidthCharacter;
+		}
+		else
+		{
+			//	Character fits into the current Line
+			charactersPerActualLine++;
+			lineLengthInPixel += advanceWidthCharacter;
 		}
 	}
-	else
-	{
-		output += string;
-	}
-	return(output);
+	return(charactersPerLine);
 }
 
 
@@ -1091,13 +1038,27 @@ CODE_RAM feedback Element::draw_string(String string, e_align_x align_x, uint32 
 {
 	if(multiLine == true && get_stringBox(string, font).x > size.x - 2 * distanceFromBorder)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
+		const Array<uint32> lineLengths = splitStringToMultiLine(string, font, distanceFromBorder);
 		
-		const uint32 numberOfLines = lines.get_size();
+		const uint32 numberOfLines = lineLengths.get_size();
+		uint32 indexStart = 0;
 		for(uint32 i = 0; i < numberOfLines; i++)
 		{
+			//	Get the Y Position for the current Line
 			const uint32 y_line = y - i * font.get_height();
-			draw_string(lines[i], align_x, y_line, font, color);
+			
+			
+			//	Get the String for the current Line
+			const uint32 lineLength = lineLengths[i];
+			const String line = string.sub(indexStart, lineLength);
+			
+			
+			//	Draw the String
+			draw_string(line, align_x, y_line, font, color);
+			
+			
+			//	Update the Start Index for the next Line
+			indexStart += lineLength;
 		}
 	}
 	else
@@ -1115,8 +1076,8 @@ CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 
 {
 	if(multiLine == true && get_stringBox(string, font).x > size.x)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
-		const uint32 numberOfLines = lines.get_size();
+		const Array<uint32> lineLengths = splitStringToMultiLine(string, font, distanceFromBorder);
+		const uint32 numberOfLines = lineLengths.get_size();
 		
 		
 		//	Get starting Y Position for the first Line
@@ -1129,31 +1090,79 @@ CODE_RAM feedback Element::draw_string(String string, e_align_y align_y, uint32 
 		{
 			case e_align_y::TOP:
 			{
+				uint32 indexStart = 0;
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
-					draw_string(lines[i], bottomLeftPosition, font, color);
+					//	Get the String for the current Line
+					const uint32 lineLength = lineLengths[i];
+					const String line = string.sub(indexStart, lineLength);
+					
+					
+					//	Draw the String
+					draw_string(line, bottomLeftPosition, font, color);
+					
+					
+					//	Update the Bottom Left Position for the next Line
 					bottomLeftPosition.y -= font.get_height();
+					
+					
+					//	Update the Start Index for the next Line
+					indexStart += lineLength;
 				}
 			}
 			break;
 			
 			case e_align_y::CENTER:
 			{
+				uint8 indexStart = 0;
 				bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * font.get_height();
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
-					draw_string(lines[i], bottomLeftPosition, font, color);
+					//	Get the String for the current Line
+					const uint32 lineLength = lineLengths[i];
+					const String line = string.sub(indexStart, lineLength);
+					
+					
+					//	Draw the String
+					draw_string(line, bottomLeftPosition, font, color);
+					
+					
+					//	Update the Bottom Left Position for the next Line
 					bottomLeftPosition.y -= font.get_height();
+					
+					
+					//	Update the Start Index for the next Line
+					indexStart += lineLength;
 				}
 			}
 			break;
 			
 			case e_align_y::BOTTOM:
 			{
+				uint32 indexStart = string.get_size();
 				for(uint32 i = 0; i < numberOfLines; i++)
 				{
-					draw_string(lines[numberOfLines - i - 1], bottomLeftPosition, font, color);
+					//	Update the Start Index for the next Line
+					const uint32 lineLength = lineLengths[numberOfLines - i - 1];
+					indexStart -= lineLength;
+					
+					
+					//	Get the String for the current Line
+					const String line = string.sub(indexStart, lineLength);
+					
+					
+					//	Draw the String
+					draw_string(line, bottomLeftPosition, font, color);
+					
+					
+					//	Update the Bottom Left Position for the next Line
 					bottomLeftPosition.y += font.get_height();
+					if(bottomLeftPosition.y > size.y - 1 - distanceFromBorder)
+					{
+						//	We reached the Top Border of the Element
+						//	So we stop drawing here
+						break;
+					}
 				}
 			}
 			break;
@@ -1180,8 +1189,8 @@ CODE_RAM feedback Element::draw_string(String string, e_align align, const Font&
 {
 	if(multiLine == true && get_stringBox(string, font).x > size.x)
 	{
-		const Array<String> lines = splitStringToMultiLine(string, font, distanceFromBorder);
-		const uint32 numberOfLines = lines.get_size();
+		const Array<uint32> lineLengths = splitStringToMultiLine(string, font, distanceFromBorder);
+		const uint32 numberOfLines = lineLengths.get_size();
 		
 		
 		//	Get starting Y Position for the first Line
@@ -1191,30 +1200,87 @@ CODE_RAM feedback Element::draw_string(String string, e_align align, const Font&
 		//	We need to distinguish between Aligning Styles here
 		if(align == e_align::TOP_LEFT || align == e_align::TOP_CENTER || align == e_align::TOP_RIGHT)
 		{
+			uint32 indexStart = 0;
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
-				draw_string(lines[i], bottomLeftPosition, font, color);
+				//	Get the String for the current Line
+				const uint32 lineLength = lineLengths[i];
+				const String line = string.sub(indexStart, lineLength);
+				
+				
+				//	Calculate the Bottom Left Position for the current Line
+				bottomLeftPosition.x = get_align(align, line, font, distanceFromBorder).x;	
+				
+				
+				//	Draw the String
+				draw_string(line, bottomLeftPosition, font, color);
+				
+				
+				//	Update the Bottom Left Position for the next Line
 				bottomLeftPosition.y -= font.get_height();
+				
+				
+				//	Update the Start Index for the next Line
+				indexStart += lineLength;
 			}
 		}
 		if(align == e_align::CENTER_LEFT || align == e_align::CENTER || align == e_align::CENTER)
 		{
+			uint32 indexStart = 0;
 			bottomLeftPosition.y += ((numberOfLines - 1) / 2.0f) * font.get_height();
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
-				draw_string(lines[i], bottomLeftPosition, font, color);
+				//	Get the String for the current Line
+				const uint32 lineLength = lineLengths[i];
+				const String line = string.sub(indexStart, lineLength);
+				
+				
+				//	Calculate the Bottom Left Position for the current Line
+				bottomLeftPosition.x = get_align(align, line, font, distanceFromBorder).x;
+				
+				
+				//	Draw the String
+				draw_string(line, bottomLeftPosition, font, color);
+				
+				
+				//	Update the Bottom Left Position for the next Line
 				bottomLeftPosition.y -= font.get_height();
+				
+				
+				//	Update the Start Index for the next Line
+				indexStart += lineLength;
 			}
 		}
 		if(align == e_align::BOTTOM_LEFT || align == e_align::BOTTOM_CENTER || align == e_align::BOTTOM_RIGHT)
 		{
+			uint32 indexStart = string.get_size();
 			for(uint32 i = 0; i < numberOfLines; i++)
 			{
-				bottomLeftPosition.x = get_align(align, lines[i], font, distanceFromBorder).x;
-				draw_string(lines[numberOfLines - i - 1], bottomLeftPosition, font, color);
+				//	Update the Start Index for the next Line
+				const uint32 lineLength = lineLengths[numberOfLines - i - 1];
+				indexStart -= lineLength;
+				
+				
+				//	Get the String for the current Line
+				const String line = string.sub(indexStart, lineLength);
+				
+				
+				//	Calculate the Bottom Left Position for the current Line
+				bottomLeftPosition.x = get_align(align, line, font, distanceFromBorder).x;
+				
+				
+				//	Draw the String
+				draw_string(line, bottomLeftPosition, font, color);
+				
+				
+				//	Update the Bottom Left Position for the next Line
 				bottomLeftPosition.y += font.get_height();
+				if(bottomLeftPosition.y > size.y - 1 - distanceFromBorder)
+				{
+					//	We reached the Top Border of the Element
+					//	So we stop drawing here
+					break;
+				}
 			}
 		}
 	}
