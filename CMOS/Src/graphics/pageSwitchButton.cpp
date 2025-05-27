@@ -39,6 +39,10 @@ CODE_RAM void PageSwitchButton::onUpdate(Element& element)
 	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
 	
 	
+	//	Write actual Page Number
+	pageSwitchButton.writeText();
+	
+	
 	//	Execute User Update first to be able to display Changes after
 	if(pageSwitchButton.m_function_onUpdate != nullptr)
 	{
@@ -142,7 +146,6 @@ CODE_RAM void PageSwitchButton::onChangePageActual(Element& element)
 	
 	const uint8 pageActual = Graphics::get().get_pageActual();
 	pageSwitchButton.set_page(pageActual);
-	pageSwitchButton.writeText();
 	
 	if(pageSwitchButton.m_function_onChangePageActual != nullptr)
 	{
