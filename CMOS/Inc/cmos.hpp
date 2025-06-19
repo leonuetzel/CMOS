@@ -178,11 +178,11 @@ class CMOS
 		
 		//	Logging
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
-			float m_load_cpu;
-			float m_load_stack_reservedAndUsed;
-			float m_load_stack_reservedAndUnused;
-			float m_load_stack;
-			float m_load_heap;
+			float m_loadCpuPercent;
+			float m_loadStackReservedAndUsedPercent;
+			float m_loadStackReservedAndUnusedPercent;
+			float m_loadStackPercent;
+			float m_loadHeapPercent;
 		#endif
 		
 		
@@ -295,7 +295,7 @@ class CMOS
 		
 		
 		//	Threading Functions
-		uint8 thread_create(f_thread entry, String name, uint8 priority, uint16 stack_size = 0, uint8 mailBoxSize = Heap::get_blockSize() / sizeof(Thread::s_mail), void* object = nullptr);
+		uint8 thread_create(f_thread entry, String name, uint8 priority, uint32 stack_size = 0, uint8 mailBoxSize = Heap::get_blockSize() / sizeof(Thread::s_mail), void* object = nullptr);
 		
 		template<typename Class>
 		inline uint8 thread_create(void (Class::*entryFunction)(), Class* object, String name, uint8 priority, uint16 stack_size = 0, uint8 mailBoxSize = Heap::get_blockSize() / sizeof(Thread::s_mail));
@@ -359,14 +359,14 @@ class CMOS
 		
 		//	Load Measurements
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
-			constexpr inline double thread_get_cpuLoad(uint8 thread_ID) const;
-			constexpr inline double thread_get_stackLoad(uint8 thread_ID) const;
+			constexpr inline float thread_getLoadCpuPercent(uint8 thread_ID) const;
+			constexpr inline float thread_getLoadStackPercent(uint8 thread_ID) const;
 			
-			constexpr inline float get_load_cpu() const;
-			constexpr inline float get_load_stack_reservedAndUsed() const;
-			constexpr inline float get_load_stack_reservedAndUnused() const;
-			constexpr inline float get_load_stack() const;
-			constexpr inline float get_load_heap() const;
+			constexpr inline float getLoadCpuPercent() const;
+			constexpr inline float getLoadStackReservedAndUsedPercent() const;
+			constexpr inline float getLoadStackReservedAndUnusedPercent() const;
+			constexpr inline float getLoadStackPercent() const;
+			constexpr inline float getLoadHeapPercent() const;
 		#endif
 		
 		
@@ -689,21 +689,21 @@ inline bool CMOS::semaphore_isLocked(const void* semaphore) const
 
 
 #if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
-	constexpr inline double CMOS::thread_get_cpuLoad(uint8 thread_ID) const
+	constexpr inline float CMOS::thread_getLoadCpuPercent(uint8 thread_ID) const
 	{
 		if(isValid_threadID(thread_ID))
 		{
-			return(m_thread[thread_ID].m_cpuLoad);
+			return(m_thread[thread_ID].m_loadCpu);
 		}
 		return(0);
 	}
 	
 	
-	constexpr inline double CMOS::thread_get_stackLoad(uint8 thread_ID) const
+	constexpr inline float CMOS::thread_getLoadStackPercent(uint8 thread_ID) const
 	{
 		if(isValid_threadID(thread_ID))
 		{
-			return(m_thread[thread_ID].m_stackLoad);
+			return(m_thread[thread_ID].m_loadStack);
 		}
 		return(0);
 	}
@@ -756,32 +756,32 @@ inline uint32 CMOS::get_id_core() const
 
 
 #if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
-	constexpr inline float CMOS::get_load_cpu() const
+	constexpr inline float CMOS::getLoadCpuPercent() const
 	{
-		return(m_load_cpu);
+		return(m_loadCpuPercent);
 	}
 	
 	
-	constexpr inline float CMOS::get_load_stack_reservedAndUsed() const
+	constexpr inline float CMOS::getLoadStackReservedAndUsedPercent() const
 	{
-		return(m_load_stack_reservedAndUsed);
+		return(m_loadStackReservedAndUsedPercent);
 	}
 	
 	
-	constexpr inline float CMOS::get_load_stack_reservedAndUnused() const
+	constexpr inline float CMOS::getLoadStackReservedAndUnusedPercent() const
 	{
-		return(m_load_stack_reservedAndUnused);
+		return(m_loadStackReservedAndUnusedPercent);
 	}
 	
 	
-	constexpr inline float CMOS::get_load_stack() const
+	constexpr inline float CMOS::getLoadStackPercent() const
 	{
-		return(m_load_stack);
+		return(m_loadStackPercent);
 	}
 	
 	
-	constexpr inline float CMOS::get_load_heap() const
+	constexpr inline float CMOS::getLoadHeapPercent() const
 	{
-		return(m_load_heap);
+		return(m_loadHeapPercent);
 	}
 #endif

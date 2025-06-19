@@ -76,7 +76,7 @@ class Thread
 		
 		
 		//	Stack Size
-		uint16 m_stackSize;
+		uint32 m_stackSize;
 		
 		
 		//	Event ID that is allowed to wake up this Thread
@@ -118,8 +118,8 @@ class Thread
 		//	Statistics
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			uint32 m_ticks;
-			float m_cpuLoad;
-			float m_stackLoad;
+			float m_loadCpu;
+			float m_loadStack;
 		#endif
 		
 		
@@ -177,8 +177,8 @@ inline Thread::Thread()
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			,
 			m_ticks(0),
-			m_cpuLoad(0),
-			m_stackLoad(0)
+			m_loadCpu(0),
+			m_loadStack(0)
 		#endif
 {
 	

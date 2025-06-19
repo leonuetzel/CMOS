@@ -297,8 +297,8 @@ feedback CMOS::thread_terminate(uint8 thread_ID, bool hardShutdown)
 		//	Delete Statistics
 		#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
 			thread.m_ticks			= 0;
-			thread.m_cpuLoad		= 0;
-			thread.m_stackLoad	= 0;
+			thread.m_loadCpu		= 0;
+			thread.m_loadStack	= 0;
 		#endif
 	}
 	unlockSemaphore();
@@ -464,7 +464,7 @@ void CMOS::reset()
 
 
 
-uint8 CMOS::thread_create(f_thread entry, String name, uint8 priority, uint16 stack_size, uint8 mailBoxSize, void* object)
+uint8 CMOS::thread_create(f_thread entry, String name, uint8 priority, uint32 stack_size, uint8 mailBoxSize, void* object)
 {
 	if(entry == nullptr || name.get_size() == 0 || mailBoxSize == 0)
 	{
@@ -1140,11 +1140,11 @@ CODE_RAM void EXCEPTION_SYSTICK()
 				Thread& thread(cmos.m_thread[i]);
 				if(thread.is_valid() == true)
 				{
-					thread.m_cpuLoad = 100 * ((float) thread.m_ticks) / sum;
+					thread.m_loadCpu = 100 * ((float) thread.m_ticks) / sum;
 					thread.m_ticks = 0;
 				}
 			}
-			cmos.m_load_cpu = 100 * (sum - idleTicks) / sum;
+			cmos.m_loadCpuPercent = 100 * (sum - idleTicks) / sum;
 			idleTicks = 0;
 			
 			
@@ -1161,7 +1161,7 @@ CODE_RAM void EXCEPTION_SYSTICK()
 					uint32 stackUsed = 4 * (thread.m_stackHighestAddress - thread.m_stackPointer);
 					uint32 stackUnused = thread.m_stackSize - stackUsed;
 					
-					thread.m_stackLoad = 100 * (((float) stackUsed) / thread.m_stackSize);
+					thread.m_loadStack = 100 * (((float) stackUsed) / thread.m_stackSize);
 					
 					reserved += thread.m_stackSize;
 					reservedAndUsed += stackUsed;
@@ -1169,13 +1169,13 @@ CODE_RAM void EXCEPTION_SYSTICK()
 				}
 			}
 			
-			cmos.m_load_stack = 100 * ((float) reserved) / cmos.m_stack.get_sizeInBytes();
-			cmos.m_load_stack_reservedAndUsed = 100 * ((float) reservedAndUsed) / reserved;
-			cmos.m_load_stack_reservedAndUnused = 100 * ((float) reservedAndUnused) / reserved;
+			cmos.m_loadStackPercent										= 100 * ((float) reserved)					/ cmos.m_stack.get_sizeInBytes();
+			cmos.m_loadStackReservedAndUsedPercent		= 100 * ((float) reservedAndUsed)		/ reserved;
+			cmos.m_loadStackReservedAndUnusedPercent	= 100 * ((float) reservedAndUnused)	/ reserved;
 			
 			
 			
-			cmos.m_load_heap = 100 * ((float) cmos.m_heap.get_sizeReservedInBytes()) / cmos.m_heap.get_sizeTotalInBytes();
+			cmos.m_loadHeapPercent = 100 * ((float) cmos.m_heap.get_sizeReservedInBytes()) / cmos.m_heap.get_sizeTotalInBytes();
 		#endif
 	}
 	

@@ -168,7 +168,7 @@ namespace ICD
 		const Array<uint8> rawData = register_read(REG::TEMPERATURE_LOW, 2);
 		if(rawData.get_size() != 2)
 		{
-			return(FAIL);
+			return(0);
 		}
 		
 		
@@ -186,7 +186,7 @@ namespace ICD
 		const Array<uint8> rawData = register_read(REG::VOLTAGE_LOW, 2);
 		if(rawData.get_size() != 2)
 		{
-			return(FAIL);
+			return(0);
 		}
 		
 		
@@ -204,7 +204,7 @@ namespace ICD
 		const Array<uint8> rawData = register_read(REG::CURRENT_LOW, 2);
 		if(rawData.get_size() != 2)
 		{
-			return(FAIL);
+			return(0);
 		}
 		
 		
@@ -252,7 +252,7 @@ namespace ICD
 		const Array<uint8> rawData = register_read(REG::CHARGE_LOW, 2);
 		if(rawData.get_size() != 2)
 		{
-			return(FAIL);
+			return(0);
 		}
 		
 		
@@ -270,7 +270,7 @@ namespace ICD
 		const Array<uint8> rawData = register_read(REG::COUNTER_LOW, 2);
 		if(rawData.get_size() != 2)
 		{
-			return(FAIL);
+			return(0);
 		}
 		
 		
