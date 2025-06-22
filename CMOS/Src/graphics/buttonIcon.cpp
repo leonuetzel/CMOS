@@ -28,6 +28,7 @@ CODE_RAM void ButtonIcon::onUpdate(Element& element)
 		if(buttonIcon.m_isPressed == false)
 		{
 			buttonIcon.draw_icon(buttonIcon.m_icon, iconPosition);
+			buttonIcon.draw_frame(buttonIcon.m_colorFrame);
 		}
 		else
 		{
@@ -43,6 +44,7 @@ CODE_RAM void ButtonIcon::onUpdate(Element& element)
 			Icon iconInverted(iconSize, iconDataInverted);
 			
 			buttonIcon.draw_icon(iconInverted, iconPosition);
+			buttonIcon.draw_frame(buttonIcon.m_colorFrame);
 			
 			delete[] iconDataInverted;
 		}

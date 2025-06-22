@@ -20,6 +20,7 @@ class ButtonIcon: public Element
 	private:
 		
 		const Icon& m_icon;
+		Color m_colorFrame;
 		uint32 m_pressTime_ms;
 		bool m_isPressed;
 		
@@ -45,7 +46,7 @@ class ButtonIcon: public Element
 		
 	public:
 		
-		inline ButtonIcon(Element element, const Icon& icon, uint32 pressTime_ms);
+		inline ButtonIcon(Element element, const Icon& icon, Color colorFrame, uint32 pressTime_ms);
 		virtual ~ButtonIcon();
 		
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
@@ -98,9 +99,10 @@ class ButtonIcon: public Element
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
-inline ButtonIcon::ButtonIcon(Element element, const Icon& icon, uint32 pressTime_ms)
+inline ButtonIcon::ButtonIcon(Element element, const Icon& icon, Color colorFrame, uint32 pressTime_ms)
 	:	Element(element),
 		m_icon(icon),
+		m_colorFrame(colorFrame),
 		m_pressTime_ms(pressTime_ms),
 		m_isPressed(false),
 		

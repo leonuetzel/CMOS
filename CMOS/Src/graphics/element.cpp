@@ -993,6 +993,10 @@ CODE_RAM feedback Element::draw_string(String string, Vec2 bottomLeftPosition, c
 
 CODE_RAM Array<uint32> Element::splitStringToMultiLine(const String& string, const Font& font, int16 distanceFromBorder)
 {
+	//	This Function splits a String into multiple Lines
+	//	It returns an Array with the Number of Characters in each Line
+	
+	
 	//	Element too small
 	if(size.x <= 2 * distanceFromBorder)
 	{
@@ -1004,14 +1008,33 @@ CODE_RAM Array<uint32> Element::splitStringToMultiLine(const String& string, con
 	const uint32 maxUsablePixelPerLine = size.x - 2 * distanceFromBorder;
 	
 	
-	//	Now we split the String into Lines
-	//	lineLengths represents the Number of Characters of that Line
+	//	Now we split the String into Lines and note the Position of the last Line Break Character to enable String Splits at natural Breaks
+	uint32 positionOfLastLineBreakCharacter = string.get_size();
+	constexpr char lineBreakCharacters[] = {' ', '\n', '\t', '-'};
+	
+	
 	Array<uint32> charactersPerLine(0);
 	uint32 lineLengthInPixel = 0;
-	for(auto& i: string)
+	for(uint32 i = 0; i < string.get_size(); i++)
 	{
+		const char& character = string[i];
+		
+		
+		//	Check if the Character is a Line Break Character
+		for(auto& j: lineBreakCharacters)
+		{
+			if(character == j)
+			{
+				//	Character is a Line Break Character
+				//	So we save the Position of the last Line Break Character
+				positionOfLastLineBreakCharacter = i;
+				break;
+			}
+		}
+		
+		
 		//	Get the Advance Width of the Character
-		const uint8 advanceWidthCharacter = font.get_advanceWidth(i);
+		const uint8 advanceWidthCharacter = font.get_advanceWidth(character);
 		
 		
 		//	Check if the Character fits into the current Line
@@ -1020,8 +1043,35 @@ CODE_RAM Array<uint32> Element::splitStringToMultiLine(const String& string, con
 		{
 			//	Character does not fit into the current Line
 			//	So we need to start a new Line
-			charactersPerLine += 1;
-			lineLengthInPixel = advanceWidthCharacter;
+			//	We try to do natural Line Breaks, so we need to check if there is a Line Break Character in the current Line
+			if(positionOfLastLineBreakCharacter != string.get_size())
+			{
+				//	There is a Line Break Character in the current Line
+				//	So we split the String at this Position
+				
+				
+				//	Calculate the Sum of Characters in previous Lines
+				uint32 sumOfCharactersAlreadyInLines = 0;
+				for(auto& j: charactersPerLine)
+				{
+					sumOfCharactersAlreadyInLines += j;
+				}
+				charactersPerActualLine += positionOfLastLineBreakCharacter - sumOfCharactersAlreadyInLines + 1;
+				i = positionOfLastLineBreakCharacter;
+				
+				
+				//	Reset the Position of the last Line Break Character
+				positionOfLastLineBreakCharacter = string.get_size();
+				
+				
+				charactersPerLine += 0;
+				lineLengthInPixel = 0;
+			}
+			else
+			{
+				charactersPerLine += 1;
+				lineLengthInPixel = advanceWidthCharacter;
+			}
 		}
 		else
 		{
