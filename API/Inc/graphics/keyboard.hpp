@@ -84,7 +84,10 @@ class Keyboard
 		
 		static Keyboard& get();
 		
-		String operator()(bool show = true, bool waitForEnter = true);
+		String operator()(bool showNow = true, bool waitForEnter = true);
+		
+		void show();
+		void hide();
 };
 
 

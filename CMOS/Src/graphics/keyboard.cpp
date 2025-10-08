@@ -214,7 +214,7 @@ void Keyboard::callback(Element& element)
 		case e_key::ENTER:
 		{
 			keyboard.m_enterPressed = true;
-			keyboard(false, false);
+			keyboard.hide();
 		}
 		break;
 		
@@ -400,48 +400,16 @@ Keyboard& Keyboard::get()
 
 
 
-String Keyboard::operator()(bool show, bool waitForEnter)
+String Keyboard::operator()(bool showNow, bool waitForEnter)
 {
-	Graphics& graphics = Graphics::get();
-	
-	
 	//	Display or Hide Keyboard
-	if(show == true)
+	if(showNow == true)
 	{
-		const uint8 pageActual = graphics.get_pageActual();
-		for(auto& i: m_keys)
-		{
-			graphics += i.button;
-			i.button->set_page(pageActual);
-		}
-		graphics += m_text;
-		m_text->set_page(pageActual);
-		
-		
-		//	Set Blending to dim other Elements and disable Touch Function of other Layers
-		const uint32 numberOfLayers = graphics.get_numberOfLayers();
-		for(uint32 i = 0; i < numberOfLayers - 1; i++)
-		{
-			graphics.set_layerAlpha(i, 30);
-			graphics.set_layerTouchability(i, false);
-		}
+		show();
 	}
 	else
 	{
-		for(auto& i: m_keys)
-		{
-			graphics -= i.button;
-		}
-		graphics -= m_text;
-		
-		
-		//	Reset Blending and Touchability
-		const uint32 numberOfLayers = graphics.get_numberOfLayers();
-		for(uint32 i = 0; i < numberOfLayers - 1; i++)
-		{
-			graphics.set_layerAlpha(i, 0xFF);
-			graphics.set_layerTouchability(i, true);
-		}
+		hide();
 	}
 	
 	
@@ -456,20 +424,71 @@ String Keyboard::operator()(bool show, bool waitForEnter)
 	
 	
 	//	Wait for Enter
-	String userInput = m_buffer;
 	m_buffer.erase();
 	
-	if(show == true && waitForEnter == true)
+	if(showNow == true && waitForEnter == true)
 	{
 		CMOS& cmos = CMOS::get();
 		while(m_enterPressed == false)
 		{
 			cmos.sleep_ms(20);
 		}
-		userInput += (*this)(false);
 	}
+	
+	
+	//	Readout Buffer
+	const String userInput = m_buffer;
+	m_buffer.erase();
 	
 	
 	//	Return User Input
 	return(userInput);
+}
+
+
+
+
+
+
+
+void Keyboard::show()
+{
+	Graphics& graphics = Graphics::get();
+	const uint8 pageActual = graphics.get_pageActual();
+	for(auto& i: m_keys)
+	{
+		graphics += i.button;
+		i.button->set_page(pageActual);
+	}
+	graphics += m_text;
+	m_text->set_page(pageActual);
+	
+	
+	//	Set Blending to dim other Elements and disable Touch Function of other Layers
+	const uint32 numberOfLayers = graphics.get_numberOfLayers();
+	for(uint32 i = 0; i < numberOfLayers - 1; i++)
+	{
+		graphics.set_layerAlpha(i, 30);
+		graphics.set_layerTouchability(i, false);
+	}
+}
+
+
+void Keyboard::hide()
+{
+	Graphics& graphics = Graphics::get();
+	for(auto& i: m_keys)
+	{
+		graphics -= i.button;
+	}
+	graphics -= m_text;
+	
+	
+	//	Reset Blending and Touchability
+	const uint32 numberOfLayers = graphics.get_numberOfLayers();
+	for(uint32 i = 0; i < numberOfLayers - 1; i++)
+	{
+		graphics.set_layerAlpha(i, 0xFF);
+		graphics.set_layerTouchability(i, true);
+	}
 }
