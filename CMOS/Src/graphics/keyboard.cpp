@@ -214,6 +214,7 @@ void Keyboard::callback(Element& element)
 		case e_key::ENTER:
 		{
 			keyboard.m_enterPressed = true;
+			keyboard(false, false);
 		}
 		break;
 		

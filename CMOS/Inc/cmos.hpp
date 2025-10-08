@@ -23,6 +23,7 @@
 #include "i_can.hpp"
 #include "i_crc.hpp"
 #include "i_dma.hpp"
+#include "i_gpio.hpp"
 #include "i_i2c.hpp"
 #include "i_mdio.hpp"
 #include "i_nvm.hpp"
