@@ -30,7 +30,8 @@ class Pair
 		
 		constexpr inline Pair();
 		constexpr inline Pair(const dataType_1& first, const dataType_2& second);
-		constexpr inline Pair(const Pair& array);
+		constexpr inline Pair(const Pair& pair);
+		inline ~Pair();
 		
 		
 		//	Getter
@@ -98,6 +99,13 @@ constexpr inline Pair<dataType_1, dataType_2>::Pair(const Pair<dataType_1, dataT
 	:	Pair()
 {
 	operator=(pair);
+}
+
+
+template<typename dataType_1, typename dataType_2>
+inline Pair<dataType_1, dataType_2>::~Pair()
+{
+	
 }
 
 

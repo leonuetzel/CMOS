@@ -13,9 +13,9 @@
 namespace Math
 {
 	/*
-		< 0: Punkt ist links	der Geraden
-		= 0: Punkt ist auf		der Geraden
-		> 0: Punkt ist rechts	der Geraden
+		< 0: Point is left of		the Line
+		= 0: Point is on				the Line
+		> 0: Point is right of	the Line
 	*/
 	template<typename dataType>
 	dataType isPointRightOrLeft(Vector2<dataType> A, Vector2<dataType> B, Vector2<dataType> point);

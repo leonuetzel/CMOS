@@ -715,18 +715,6 @@ constexpr inline const dataType& Array<dataType>::operator()(uint32 index) const
 
 
 template<typename dataType>
-inline bool Array<dataType>::operator!=(const Array<dataType> array) const
-{
-	return(!operator==(array));
-}
-
-
-
-
-
-
-
-template<typename dataType>
 bool Array<dataType>::operator==(const Array<dataType> array) const
 {
 	//	Simple Size Comparison
@@ -756,6 +744,13 @@ bool Array<dataType>::operator==(const Array<dataType> array) const
 		}
 	}
 	return(true);
+}
+
+
+template<typename dataType>
+inline bool Array<dataType>::operator!=(const Array<dataType> array) const
+{
+	return(!operator==(array));
 }
 
 
