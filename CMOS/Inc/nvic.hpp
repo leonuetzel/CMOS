@@ -57,6 +57,8 @@ class NVIC
 		NVIC(const NVIC& nvic) = delete;
 		inline ~NVIC();
 		
+		inline feedback init();
+		
 		friend class CMOS;
 		
 		
@@ -64,8 +66,6 @@ class NVIC
 		
 		
 	public:
-		
-		inline feedback init();
 		
 		inline feedback enable(uint16 interrupt);
 		inline feedback disable(uint16 interrupt);
@@ -116,6 +116,17 @@ inline NVIC::~NVIC()
 
 
 
+
+
+
+
+inline feedback NVIC::init()
+{
+	return(OK);
+}
+
+
+
 /*****************************************************************************/
 /*                      					Protected	  			 						 						 */
 /*****************************************************************************/
@@ -127,17 +138,6 @@ inline NVIC::~NVIC()
 /*****************************************************************************/
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
-
-inline feedback NVIC::init()
-{
-	return(OK);
-}
-
-
-
-
-
-
 
 inline feedback NVIC::enable(uint16 interrupt)
 {

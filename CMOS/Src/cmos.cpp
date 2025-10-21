@@ -170,7 +170,7 @@ CODE_RAM void CMOS::contextSwitch()
 	while(newThreadID == threadID_invalid)
 	{
 		//	Search for the Thread with the maximium Priority that isnt sleeping or waiting for an Event or Mail
-		uint8 maximumPriority = 0;
+		int16 maximumPriority = -1;
 		for(uint8 i = 0; i < c_numberOfThreads; i++)
 		{
 			Thread& thread(m_thread[i]);
@@ -185,7 +185,7 @@ CODE_RAM void CMOS::contextSwitch()
 						//	Thread is qualified only if he is not waiting for a Mail
 						if(thread.m_wakeUpMailSender == threadID_invalid)
 						{
-							const uint8 priority = thread.m_priority;
+							const int16 priority = thread.m_priority;
 							if(priority > maximumPriority)
 							{
 								maximumPriority = priority;
