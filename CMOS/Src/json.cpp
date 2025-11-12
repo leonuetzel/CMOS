@@ -61,15 +61,28 @@ feedback JSON::transformToString(String& string, bool prettyPrinting, bool delet
 		{
 			if(m_name.get_size() > 0)
 			{
-				if(treeDepth == 0) string += "{";
+				if(treeDepth == 0)
+				{
+					string += "{";
+				}
 				string += "\"" + m_name + "\":";
 				if(prettyPrinting == true)
 				{
 					string += ' ';
 				}
 			}
-			string += ( m_value.get_size() <= 0 || m_value == "") ? "null" : m_value;
-			if (treeDepth == 0) string += "}";
+			if(m_value.get_size() <= 0 || m_value == "")
+			{
+				string += "null";
+			}
+			else
+			{
+				string += m_value;
+			}
+			if(treeDepth == 0)
+			{
+				string += "}";
+			}
 			return(OK);
 		}
 		else
