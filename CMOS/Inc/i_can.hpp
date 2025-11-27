@@ -43,6 +43,32 @@ class I_CAN
 			BUS_OFF
 		};
 		
+		enum class e_filterType: uint8
+		{
+			RANGE,
+			DUAL_ID,
+			MASK
+		};
+		
+		enum class e_filterBehavior: uint8
+		{
+			DISABLED,
+			STORE_IN_RX_FIFO_0,
+			STORE_IN_RX_FIFO_1,
+			REJECT_ID,
+			SET_PRIORITY,
+			SET_PRIORITY_AND_STORE_IN_RX_FIFO_0,
+			SET_PRIORITY_AND_STORE_IN_RX_FIFO_1
+		};
+		
+		typedef struct
+		{
+			e_filterType type;
+			e_filterBehavior behavior;
+			uint32 ID1_or_filter;
+			uint32 ID2_or_mask;
+		}s_filterElement;
+		
 		
 		
 		
@@ -66,10 +92,11 @@ class I_CAN
 		
 	public:
 		
+		virtual feedback stop() = 0;
 		virtual feedback tx(const CAN_Frame& canFrame) = 0;
-		virtual feedback rx(CAN_Frame& canFrame) = 0;
+		virtual feedback rx(CAN_Frame& canFrame, uint32 fifoID = 0) = 0;
 		
-		virtual uint32 get_numberOfUnread() const = 0;
+		virtual uint32 get_numberOfUnread(uint32 fifoID = 0) const = 0;
 		virtual bool is_dataAvailable() const = 0;
 		
 		virtual uint16 get_eventID() = 0;
