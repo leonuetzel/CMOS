@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uniqueArray.hpp"
+#include "uniquePairArray.hpp"
 #include "canFrame.hpp"
 
 
@@ -101,7 +101,7 @@ class I_CAN
 		
 		virtual uint16 get_eventID() = 0;
 		virtual e_state get_state() = 0;
-		virtual const UniqueArray<e_error>& get_errors() const = 0;
+		virtual const UniquePairArray<e_error, bool>& get_errors() const = 0;
 		virtual void clearErrors() = 0;
 		
 		virtual uint32 get_baudRate() const = 0;

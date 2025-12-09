@@ -56,6 +56,47 @@ namespace bit
 	}
 	
 	
+	template<typename dataType>
+	constexpr inline void fieldWrite(dataType& variable, uint32 lowestBit, uint32 numberOfBits, uint32 valueToWrite)
+	{
+		//	Create temporary Variable to not modify the original one without Intention
+		dataType temp = variable;
+		
+		
+		//	Clear the Bits to Write
+		clear(temp, lowestBit, numberOfBits);
+		
+		
+		//	Mask unwanted Bits from Value to write
+		valueToWrite = valueToWrite & ((1 << numberOfBits) - 1);
+		
+		
+		//	Shift Value to write into correct Position
+		valueToWrite = valueToWrite << lowestBit;
+		
+		
+		//	Write Value into Variable
+		temp = temp | valueToWrite;
+		
+		
+		//	Write temporary Variable back into original Variable
+		variable = temp;
+	}
+	
+	
+	template<typename dataType>
+	constexpr inline dataType fieldRead(dataType variable, uint32 lowestBit, uint32 numberOfBits)
+	{
+		//	Shift unwanted Bits out
+		variable = variable >> lowestBit;
+		
+		
+		//	Mask unwanted Bits
+		variable = variable & ((1 << numberOfBits) - 1);
+		return(variable);
+	}
+	
+	
 	
 	
 	
