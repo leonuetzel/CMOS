@@ -432,6 +432,9 @@ void CMOS::run()
 	{
 		reset();
 	}
+	
+	
+	//	Call global and static Constructors
 	constructors();
 	
 	
@@ -1077,6 +1080,20 @@ CODE_RAM void CMOS::semaphore_transferAllOwnershipsToParentThread()
 
 
 
+CODE_RAM int64 CMOS::getMilliSecondsSinceTimestamp(uint64 ticks) const
+{
+	const uint64 currentTicks = m_ticks;
+	const int64 delta = currentTicks - ticks;
+	const int64 milliseconds = (delta * 1000) / c_clock_systick;
+	return(milliseconds);
+}
+
+
+
+
+
+
+
 
 
 #if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
@@ -1180,19 +1197,6 @@ CODE_RAM void EXCEPTION_SYSTICK()
 	}
 	
 	
-	
-	
-	//	Check actual Stackpointer
-	uint32 stackPointer = 0;
-	asm volatile
-	(
-		"mrs %[out_a], msp"
-			: [out_a] "=r" (stackPointer)
-			:
-			:
-	);
-	
-	
 	for(uint8 i = 0; i < cmos.c_numberOfThreads; i++)
 	{
 		Thread& thread(cmos.m_thread[i]);
@@ -1207,31 +1211,31 @@ CODE_RAM void EXCEPTION_SYSTICK()
 			{
 				cmos.reset();
 			}
-		}
-		
-		
-		//	Thread Sleep Management
-		uint32 temp = thread.m_sleepTime;
-		if(temp > 0)
-		{
-			temp--;
-			thread.m_sleepTime = temp;
-			if(temp == 0)
+			
+			
+			//	Thread Sleep Management
+			uint32 temp = thread.m_sleepTime;
+			if(temp > 0)
 			{
-				thread.m_wakeUpEventID = cmos.eventID_invalid;
-				cmos.contextSwitch();
+				temp--;
+				thread.m_sleepTime = temp;
+				if(temp == 0)
+				{
+					thread.m_wakeUpEventID = cmos.eventID_invalid;
+					cmos.contextSwitch();
+				}
 			}
-		}
-		
-		
-		//	Wakeup Thread if listened Event occured and this Thread waits for it
-		if(thread.m_listeningEventOccured == true)
-		{
-			//	Only wakeup Thread if its sleeping already and waiting for this Event
-			if(thread.m_wakeUpEventID == thread.m_listeningEventID || thread.m_wakeUpEventID == CMOS::eventID_any)
+			
+			
+			//	Wakeup Thread if listened Event occured and this Thread waits for it
+			if(thread.m_listeningEventOccured == true)
 			{
-				thread.m_wakeUpEventID = CMOS::eventID_invalid;
-				cmos.contextSwitch();
+				//	Only wakeup Thread if its sleeping already and waiting for this Event
+				if(thread.m_wakeUpEventID == thread.m_listeningEventID || thread.m_wakeUpEventID == CMOS::eventID_any)
+				{
+					thread.m_wakeUpEventID = CMOS::eventID_invalid;
+					cmos.contextSwitch();
+				}
 			}
 		}
 	}

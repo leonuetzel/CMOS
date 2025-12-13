@@ -375,8 +375,9 @@ class CMOS
 		inline feedback set_systemClock(uint32 clock);
 		
 		
-		// Tick Counter with one Tick equal to a Period of c_clock_systick
+		//	Tick Counter with one Tick equal to a Period of c_clock_systick
 		constexpr inline volatile uint64& get_ticks();
+		int64 getMilliSecondsSinceTimestamp(uint64 ticks) const;
 		
 		
 		//	Getter for Hardware Modules
