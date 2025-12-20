@@ -92,6 +92,7 @@ class I_CAN
 		
 	public:
 		
+		virtual feedback init(uint32 baudRate, const Array<s_filterElement>& standardfilterElements, const Array<s_filterElement>& extendedfilterElements, bool silentMode, uint32 rxBufferSize, uint32 txBufferSize) = 0;
 		virtual feedback stop() = 0;
 		virtual feedback tx(const CAN_Frame& canFrame) = 0;
 		virtual feedback rx(CAN_Frame& canFrame, uint32 fifoID = 0) = 0;
