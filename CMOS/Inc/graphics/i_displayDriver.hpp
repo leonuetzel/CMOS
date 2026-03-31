@@ -38,20 +38,26 @@ class I_DisplayDriver
 		
 	public:
 		
-		virtual uint16 get_eventID_frameFinished()																= 0;
+		virtual feedback init(s_displayData displayData)																						= 0;
+		virtual feedback set_layerData(uint32 layerNumber, RectGraphic& layerData)									= 0;
 		
-		virtual feedback start()																									= 0;
-		virtual feedback stop()																										= 0;
-		virtual feedback set_layerBuffer(uint32 layer, Color* buffer)							= 0;
-		virtual feedback clear(uint32 layer)																			= 0;
-		virtual feedback set_colorBackground(uint8 red, uint8 green, uint8 blue)	= 0;
-		virtual feedback set_layerAlpha(uint8 layer, uint8 alpha)									= 0;
-		virtual feedback set_pixel(Vec2& position, Color color, uint32 layer)			= 0;
+		virtual uint16 get_eventID_vSync()																													= 0;
 		
-		virtual s_displayData& get_displayData()																	= 0;
-		virtual Vec2 get_displayDimensions()																			= 0;
-		virtual RectGraphic& get_layerData(uint32 layer)													= 0;
-		virtual uint32 get_numberOfLayers()																				= 0;
-		virtual uint32 get_fps()																									= 0;
-		virtual Color get_colorBackground()																				= 0;
+		virtual feedback start()																																		= 0;
+		virtual feedback stop()																																			= 0;
+		virtual feedback set_layerBuffer(uint32 layer, Color* buffer, bool applyOnNextVsync = true)	= 0;
+		virtual feedback clear(uint32 layer)																												= 0;
+		virtual feedback set_colorBackground(Color color)																						= 0;
+		virtual feedback set_layerAlpha(uint8 layer, uint8 alpha)																		= 0;
+		virtual feedback set_pixel(Vec2& position, Color color, uint32 layer)												= 0;
+		
+		virtual s_displayData& get_displayData()																										= 0;
+		virtual Vec2 get_displayDimensions()																												= 0;
+		virtual RectGraphic& get_layerData(uint32 layer)																						= 0;
+		virtual uint32 get_maximumNumberOfLayers()																									= 0;
+		virtual uint32 get_fps()																																		= 0;
+		virtual uint64& get_frameCounter()																													= 0;
+		virtual uint32 get_fifoUnderrunCounter()																										= 0;
+		virtual uint32 get_fifoTransmitErrorCounter()																								= 0;
+		virtual Color get_colorBackground()																													= 0;
 };

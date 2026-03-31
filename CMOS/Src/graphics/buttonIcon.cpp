@@ -21,8 +21,8 @@ CODE_RAM void ButtonIcon::onUpdate(Element& element)
 	ButtonIcon& buttonIcon = (ButtonIcon&) element;
 	
 	
-	//	Full Rebuild
-	if(buttonIcon.m_rebuildRequested == true)
+	//	Full rebuild
+	if(buttonIcon.isRebuildRequested() == true)
 	{
 		const Vec2 iconPosition((buttonIcon.get_size() - buttonIcon.m_icon.get_size()) / 2);
 		if(buttonIcon.m_isPressed == false)
@@ -32,29 +32,32 @@ CODE_RAM void ButtonIcon::onUpdate(Element& element)
 		}
 		else
 		{
-			//	Invert Icon Colors
-			const Color* iconData = buttonIcon.m_icon.get_data();
+			//	Invert icon colors only once
 			const Vec2 iconSize = buttonIcon.m_icon.get_size();
-			const uint32 numberOfPixel = iconSize.x * iconSize.y;
-			Color* iconDataInverted = new Color[numberOfPixel];
-			for(uint32 i = 0; i < numberOfPixel; i++)
+			if(buttonIcon.m_iconDataInverted == nullptr)
 			{
-				iconDataInverted[i] = iconData[i].invert();
+				const Color* iconData = buttonIcon.m_icon.get_data();
+				
+				const uint32 numberOfPixel = iconSize.x * iconSize.y;
+				Color* iconDataInverted = new Color[numberOfPixel];
+				
+				for(uint32 i = 0; i < numberOfPixel; i++)
+				{
+					iconDataInverted[i] = iconData[i].invert();
+				}
+				
+				buttonIcon.m_iconDataInverted = iconDataInverted;
 			}
-			Icon iconInverted(iconSize, iconDataInverted);
 			
+			
+			//	Draw inverted icon
+			const Icon iconInverted(iconSize, buttonIcon.m_iconDataInverted);
 			buttonIcon.draw_icon(iconInverted, iconPosition);
-			buttonIcon.draw_frame(buttonIcon.m_colorFrame);
 			
-			delete[] iconDataInverted;
+			
+			//	Draw frame
+			buttonIcon.draw_frame(buttonIcon.m_colorFrame);
 		}
-	}
-	
-	
-	//	Normal Update
-	if(buttonIcon.m_updateRequested == true)
-	{
-		
 	}
 	
 	
@@ -78,32 +81,33 @@ CODE_RAM void ButtonIcon::onCallback(Element& element)
 		if(m_touchEvent == Graphics::e_touchEvent::TOUCH)
 		{
 			buttonIcon.m_isPressed = true;
-			buttonIcon.m_rebuildRequested = true;
+			buttonIcon.requestRebuild();
 		}
 		
 		counter_ms++;
 		
 		
-		//	Unlock Semaphore so that an Update can take Place
+		//	Unlock semaphore so that an update can take place
 		cmos.semaphore_unlock(&element);
 		cmos.sleep_ms(1);
 		cmos.semaphore_lock(&element);
 	}
 	
 	
-	//	Draw Button in un-pressed Condition
+	//	Draw button in un-pressed condition
 	buttonIcon.m_isPressed = false;
-	buttonIcon.m_rebuildRequested = true;
+	buttonIcon.requestRebuild();
+	
 	cmos.semaphore_unlock(&element);
 	cmos.sleep_ms(1);
 	cmos.semaphore_lock(&element);
 	
 	
-	//	Execute User Callback
+	//	Execute user callback
 	if(buttonIcon.m_function_onCallback != nullptr && counter_ms >= buttonIcon.m_pressTime_ms && buttonIcon.m_touchValid == true)
 	{
 		buttonIcon.m_function_onCallback(element);
-		buttonIcon.m_updateRequested = true;
+		buttonIcon.requestUpdate();
 	}
 }
 
@@ -119,35 +123,13 @@ CODE_RAM void ButtonIcon::onChangePage(Element& element)
 }
 
 
-CODE_RAM void ButtonIcon::onChangeLayer(Element& element)
+CODE_RAM void ButtonIcon::onChangeShape(Element& element)
 {
 	ButtonIcon& buttonIcon = (ButtonIcon&) element;
 	
-	if(buttonIcon.m_function_onChangeLayer != nullptr)
+	if(buttonIcon.m_function_onChangeShape != nullptr)
 	{
-		buttonIcon.m_function_onChangeLayer(element);
-	}
-}
-
-
-CODE_RAM void ButtonIcon::onChangePosition(Element& element)
-{
-	ButtonIcon& buttonIcon = (ButtonIcon&) element;
-	
-	if(buttonIcon.m_function_onChangePosition != nullptr)
-	{
-		buttonIcon.m_function_onChangePosition(element);
-	}
-}
-
-
-CODE_RAM void ButtonIcon::onChangeSize(Element& element)
-{
-	ButtonIcon& buttonIcon = (ButtonIcon&) element;
-	
-	if(buttonIcon.m_function_onChangeSize != nullptr)
-	{
-		buttonIcon.m_function_onChangeSize(element);
+		buttonIcon.m_function_onChangeShape(element);
 	}
 }
 
@@ -170,5 +152,9 @@ CODE_RAM void ButtonIcon::onChangePageActual(Element& element)
 
 ButtonIcon::~ButtonIcon()
 {
-	
+	if(m_iconDataInverted != nullptr)
+	{
+		delete[] m_iconDataInverted;
+		m_iconDataInverted = nullptr;
+	}
 }

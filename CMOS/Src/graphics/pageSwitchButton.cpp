@@ -18,11 +18,11 @@
 
 CODE_RAM void PageSwitchButton::writeText()
 {
-	//	Convert Page Number to String
-	const String pageNumberAsString(Graphics::get().get_pageActual());
+	//	Convert page number to string
+	const String pageNumberAsString(Graphics::get().get_currentPage());
 	
 	
-	//	Draw Text
+	//	Draw text
 	draw_string("<", e_align::CENTER_LEFT, *m_font, m_colorText);
 	draw_string(">", e_align::CENTER_RIGHT, *m_font, m_colorText);
 	draw_string(pageNumberAsString, e_align::CENTER, *m_font, m_colorText);
@@ -39,11 +39,11 @@ CODE_RAM void PageSwitchButton::onUpdate(Element& element)
 	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
 	
 	
-	//	Write actual Page Number
+	//	Write current page number
 	pageSwitchButton.writeText();
 	
 	
-	//	Execute User Update first to be able to display Changes after
+	//	Execute user update first to be able to display changes after
 	if(pageSwitchButton.m_function_onUpdate != nullptr)
 	{
 		pageSwitchButton.m_function_onUpdate(pageSwitchButton);
@@ -72,17 +72,17 @@ CODE_RAM void PageSwitchButton::onCallback(Element& element)
 	
 	
 	
-	int8 pageActual = graphics.get_pageActual();
-	pageActual += add;
-	if(pageActual < 0)
+	int8 pageCurrent = graphics.get_currentPage();
+	pageCurrent += add;
+	if(pageCurrent < 0)
 	{
-		pageActual = c_numberOfPages - 1;
+		pageCurrent = c_numberOfPages - 1;
 	}
-	if((uint8) pageActual >= c_numberOfPages)
+	if((uint8) pageCurrent >= c_numberOfPages)
 	{
-		pageActual = 0;
+		pageCurrent = 0;
 	}
-	graphics.set_pageActual(pageActual);
+	graphics.set_currentPage(pageCurrent);
 	
 	
 	
@@ -91,7 +91,7 @@ CODE_RAM void PageSwitchButton::onCallback(Element& element)
 	if(pageSwitchButton.m_function_onCallback != nullptr)
 	{
 		pageSwitchButton.m_function_onCallback(element);
-		pageSwitchButton.m_updateRequested = true;
+		pageSwitchButton.requestUpdate();
 	}
 }
 
@@ -107,35 +107,13 @@ CODE_RAM void PageSwitchButton::onChangePage(Element& element)
 }
 
 
-CODE_RAM void PageSwitchButton::onChangeLayer(Element& element)
+CODE_RAM void PageSwitchButton::onChangeShape(Element& element)
 {
 	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
 	
-	if(pageSwitchButton.m_function_onChangeLayer != nullptr)
+	if(pageSwitchButton.m_function_onChangeShape != nullptr)
 	{
-		pageSwitchButton.m_function_onChangeLayer(element);
-	}
-}
-
-
-CODE_RAM void PageSwitchButton::onChangePosition(Element& element)
-{
-	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
-	
-	if(pageSwitchButton.m_function_onChangePosition != nullptr)
-	{
-		pageSwitchButton.m_function_onChangePosition(element);
-	}
-}
-
-
-CODE_RAM void PageSwitchButton::onChangeSize(Element& element)
-{
-	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
-	
-	if(pageSwitchButton.m_function_onChangeSize != nullptr)
-	{
-		pageSwitchButton.m_function_onChangeSize(element);
+		pageSwitchButton.m_function_onChangeShape(element);
 	}
 }
 
@@ -144,8 +122,8 @@ CODE_RAM void PageSwitchButton::onChangePageActual(Element& element)
 {
 	PageSwitchButton& pageSwitchButton = (PageSwitchButton&) element;
 	
-	const uint8 pageActual = Graphics::get().get_pageActual();
-	pageSwitchButton.set_page(pageActual);
+	const uint8 pageCurrent = Graphics::get().get_currentPage();
+	pageSwitchButton.set_page(pageCurrent);
 	
 	if(pageSwitchButton.m_function_onChangePageActual != nullptr)
 	{

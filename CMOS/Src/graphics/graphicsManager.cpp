@@ -18,228 +18,152 @@
 
 CODE_RAM void Graphics::manager()
 {
+	//	Start display driver with the second framebuffer (frontbuffer)
+	const uint16 eventID_vSync = m_displayDriver->get_eventID_vSync();
 	CMOS& cmos = CMOS::get();
+	cmos.event_subscribe(eventID_vSync);
 	
-	
-	//	Ticks for periodic Element Update
-	constexpr uint32 c_ticks_per_ms = CMOS::c_clock_systick / 1000;
-	
-	
-	//	Start Display Driver
-	const uint16 eventID_frameFinished = m_displayDriver->get_eventID_frameFinished();
-	cmos.event_subscribe(eventID_frameFinished);
+	if(m_displayDriver->set_colorBackground(m_backgroundColor) != OK)
+	{
+		return;
+	}
+	RectGraphic frameBufferInitial(m_frameBufferShape, m_frameBufferData[0]);
+	if(m_displayDriver->set_layerData(0, frameBufferInitial) != OK)
+	{
+		return;
+	}
+	if(m_displayDriver->set_layerBuffer(0, m_frameBufferData[1]) != OK)
+	{
+		return;
+	}
 	if(m_displayDriver->start() != OK)
 	{
 		return;
 	}
 	
 	
-	//	Init Graphic Accelerator Interrupt
-	const uint16 c_interrupt_graphicAccelerator	= m_graphicAccelerator->get_wakeUpInterrupt();
-	
-	NVIC& nvic = cmos.get_nvic();														
-	nvic.setPriority(c_interrupt_graphicAccelerator, 14);
-	nvic.enable(c_interrupt_graphicAccelerator);
-	
-	
-	//	Clear Backbuffer and set Background Color in Display Driver to Black
-	for(uint32 i = 0; i < c_numberOfLayers; i++)
-	{
-		clear_layer(i);
-	}
-	set_backgroundColor(Colors::black);
-	
-	
-	
-	
-	
-	//	Send Message to Parent Thread (waiting in the Init-Function for Response) to show that Thread is ready
+	//	Send message to parent thread (waiting in the init-function for response) to show that thread is ready
 	cmos.send_mail(cmos.get_parentThreadID(), 0);
+	
+	
+	
+	
 	
 	uint8 fps = 0;
 	uint8 second = cmos.get_time().second;
-	Array<bool> change(false, c_numberOfLayers);
-	
-	
-	
-	
-	
+	uint64& frameCounter = m_displayDriver->get_frameCounter();
 	while(1)
 	{
-		for(uint32 i = 0; i < c_numberOfLayers; i++)
-		{
-			change[i] = false;
-		}
-		
-		
-		//	Layer Reload System
-		while(cmos.is_mailAvailable() == true)
-		{
-			Vec2 touchPoint;
-			
-			Thread::s_mail mail = cmos.read_mail();
-			if(mail.type == Thread::e_mailType::NORMAL)
-			{
-				if(mail.data == c_numberOfLayers)
-				{
-					for(auto& i: change)
-					{
-						i = true;
-					}
-				}
-				else
-				{
-					change[mail.data] = true;
-				}
-			}
-		}
-		
-		
-		//	Display Reload requested
-		if(m_reloadRequested == true)
-		{
-			//	Clear Backbuffer
-			for(uint32 i = 0; i < c_numberOfLayers; i++)
-			{
-				change[i] = true;
-				clear_layer(i);
-			}
-			
-			
-			//	Update all Elements that are on the actual Page
-			for(uint32 i = 0; i < m_elements.get_size(); i++)
-			{
-				Element& element = *m_elements[i];
-				element.onChangePageActual();
-				if(element.m_page == m_pageActual)
-				{
-					element.m_ticks = cmos.get_ticks();
-					
-					element.m_rebuildRequested = true;
-					element.m_updateRequested = true;
-					element.onUpdate();
-				}
-			}
-			m_reloadRequested = false;
-		}
-		
-		
-		//	Periodic Element Update
-		for(uint32 i = 0; i < m_elements.get_size(); i++)
-		{
-			Element& element = *m_elements[i];
-			if(element.m_page == m_pageActual)
-			{
-				//	Check if Element needs to be updated
-				bool updateManual = false;
-				bool updatePeriodic = false;
-				{
-					if(element.m_rebuildRequested == true || element.m_updateRequested == true)
-					{
-						updateManual = true;
-					}
-					else
-					{
-						if(element.m_updateRate_ms > 0)
-						{
-							if(cmos.get_ticks() - element.m_ticks > element.m_updateRate_ms * c_ticks_per_ms)
-							{
-								element.m_updateRequested = true;
-								updatePeriodic = true;
-							}
-						}
-					}
-				}
-				
-				
-				//	Update Element if needed
-				if(updateManual == true || updatePeriodic == true)
-				{
-					change[element.m_layer] = true;
-					element.onUpdate();
-					if(updatePeriodic == true)
-					{
-						element.m_ticks = cmos.get_ticks();
-					}
-				}
-			}
-		}
-		
-		
-		//	Sleep until vertical Sync
-		cmos.event_listen(eventID_frameFinished);
-		cmos.sleep_untilEvent(eventID_frameFinished);
-		
-		
-		//	Calculate actual Framerate
+		//	Calculate Framerate
 		fps++;
-		if(cmos.get_time().second != second)
+		const uint8 secondNow = cmos.get_time().second;
+		if(secondNow != second)
 		{
-			second = cmos.get_time().second;
+			second = secondNow;
 			m_fps = fps;
 			fps = 0;
 		}
 		
 		
-		//	Blend Layer 0 with Background if available
-		if(change[0] == true)
+		//	Soft-exit mechanism
+		while(cmos.is_mailAvailable() == true)
 		{
-			if(m_background.data != nullptr && m_background_visible == true)
+			const Thread::s_mail mail = cmos.read_mail();
+			if(mail.type == Thread::e_mailType::EXIT)
 			{
-				m_graphicAccelerator->draw_rectangleFull(m_displayDriver->get_layerData(0), Element::m_backBuffer[0], m_background);
-			}
-			else
-			{
-				m_graphicAccelerator->draw_rectangleFull(m_displayDriver->get_layerData(0), Element::m_backBuffer[0]);
-			}
-		}
-		
-		
-		//	Transfer all other Layers
-		for(uint32 i = 1; i < c_numberOfLayers; i++)
-		{
-			if(change[i] == true)
-			{
-				m_graphicAccelerator->draw_rectangleFull(m_displayDriver->get_layerData(i), Element::m_backBuffer[i]);
+				//	Stop the display driver
+				m_displayDriver->stop();
+				return;
 			}
 		}
 		
 		
-		//	Wait for Transfers to be finished
-		while(m_graphicAccelerator->is_available() == false)
+		//	On-page-change action
+		if(m_pageChangedActionNecessary == true)
 		{
-			#if defined(CORTEX_M7)
-				cmos.sleep_100us(1);
-			#endif
+			for(auto& i: m_elements)
+			{
+				//	Call "onChangePageActual" function for all elements
+				i->onChangePageActual();
+				
+				
+				//	Request update for all elements on the current page
+				//	Do this AFTER calling the "onChangePageActual" function
+				//	This way elements like the PageSwitchButton can change their page and then show up on the new current page
+				if(i->m_page == m_pageCurrent)
+				{
+					i->requestUpdate();
+				}
+			}
 			
-			#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
-				cmos.sleep_ms(1);
-			#endif
+			
+			//	Reset flag
+			m_pageChangedActionNecessary = false;
 		}
-	}
-}
-
-
-CODE_RAM feedback Graphics::clear_layer(uint8 layer)
-{
-	if(layer >= c_numberOfLayers)
-	{
-		return(FAIL);
-	}
-	
-	CMOS& cmos = CMOS::get();
-	m_graphicAccelerator->draw_rectangleFull(Element::m_backBuffer[layer], Colors::transparent);
-	while(m_graphicAccelerator->is_available() == false)
-	{
-		#if defined(CORTEX_M7)
-			cmos.sleep_100us(1);
-		#endif
 		
-		#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
-			cmos.sleep_ms(1);
-		#endif
+		
+		//	Synchronize the framebuffers of all elements to avoid flickering
+		for(auto& i: m_elements)
+		{
+			i->syncFramebuffers();
+		}
+		
+		
+		//	Element updates
+		for(auto& i: m_elements)
+		{
+			if(i->m_visible == true && i->m_function_onUpdate != nullptr && i->m_page == m_pageCurrent)
+			{
+				bool updateNecessary = false;
+				
+				
+				//	Manual update
+				if(i->m_frameCounterAtLastUpdate == 0xFFFFFFFFFFFFFFFF)
+				{
+					updateNecessary = true;
+				}
+				else
+				{
+					//	Periodic update (disabled if "m_updatePeriodInFrames" is 0)
+					if(i->m_updatePeriodInFrames > 0)
+					{
+						const uint64 framesSinceLastUpdate = frameCounter - i->m_frameCounterAtLastUpdate;
+						if(framesSinceLastUpdate >= i->m_updatePeriodInFrames)
+						{
+							updateNecessary = true;
+						}
+					}
+				}
+				
+				
+				//	Execute update function if necessary
+				if(updateNecessary == true)
+				{
+					i->onUpdate();
+					
+					
+					//	Update "m_frameCounterAtLastUpdate" to current frame counter to be able to calculate the time for the next periodic update
+					//	DONT DO THIS BEFORE THE "onUpdate" FUNCTION, because the update function might request an update
+					//	by calling "requestUpdate", which sets "m_frameCounterAtLastUpdate" to 0xFFFFFFFFFFFFFFFF.
+					//	If we set it to the current frame counter before the update function, the element would permanently update itself every frame
+					i->m_frameCounterAtLastUpdate = frameCounter;
+				}
+			}
+		}
+		
+		
+		//	Swap front and back buffer
+		m_displayDriver->set_layerBuffer(0, m_frameBufferData[m_frameBufferIndex]);
+		
+		
+		//	Sleep until vertical sync
+		cmos.event_listen(eventID_vSync);
+		cmos.sleep_untilEvent(eventID_vSync);
+		
+		
+		//	Update frame buffer index for next frame
+		m_frameBufferIndex = 1 - m_frameBufferIndex;
 	}
-	return(OK);
 }
 
 
@@ -248,10 +172,19 @@ CODE_RAM feedback Graphics::clear_layer(uint8 layer)
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
-feedback Graphics::init(I_GraphicAccelerator& graphicAccelerator, I_DisplayDriver& displayDriver, I_Semaphore& semaphore, uint8 numberOfPages, const Array<Color*>& backBuffer, Color* backgroundBuffer)
+feedback Graphics::init(I_GraphicAccelerator& graphicAccelerator, I_DisplayDriver& displayDriver, Rect frameShape, Color* frameBuffer1, Color* frameBuffer2)
 {
-	//	Check double Initialization
-	if(m_initialized == true)
+	//	Check if desired frame shape fits into display dimensions
+	const Vec2 displaySize = displayDriver.get_displayDimensions();
+	Rect displayRect(Vec2(0, 0), displaySize);
+	if(displayRect.contains(frameShape) == false)
+	{
+		return(FAIL);
+	}
+	
+	
+	//	Check if frame buffers are not nullpointers
+	if(frameBuffer1 == nullptr || frameBuffer2 == nullptr)
 	{
 		return(FAIL);
 	}
@@ -261,41 +194,18 @@ feedback Graphics::init(I_GraphicAccelerator& graphicAccelerator, I_DisplayDrive
 	m_graphicAccelerator					= &graphicAccelerator;
 	m_displayDriver								= &displayDriver;
 	
-	c_numberOfLayers							= displayDriver.get_numberOfLayers();
-	c_numberOfPages								= numberOfPages;
+	m_frameBufferShape						= frameShape;
+	m_frameBufferData[0]					= frameBuffer1;
+	m_frameBufferData[1]					= frameBuffer2;
 	
 	Element::m_graphicAccelerator	= m_graphicAccelerator;
-	Element::m_backBuffer					= new RectGraphic[c_numberOfLayers];
-	
-	
-	//	Init Software Background that will be blended in by the Graphic Accelerator
-	m_background = RectGraphic(m_displayDriver->get_layerData(0), backgroundBuffer);
-	if(backgroundBuffer != nullptr)
-	{
-		m_background_visible = true;
-	}
-	
-	
-	//	Set Backbuffer Pointer
-	for(uint32 i = 0; i < c_numberOfLayers; i++)
-	{
-		Rect rect = m_displayDriver->get_layerData(i);
-		Color* data = backBuffer[i];
-		
-		Element::m_backBuffer[i] = RectGraphic(rect, data);
-	}
-	
-	
-	//	Layer Touchability (all Layer touchable by default)
-	m_layerTouchability.set_size(c_numberOfLayers, true, true);
 	
 	
 	//	Create Graphics Manager Thread
 	CMOS& cmos = CMOS::get();
-	m_thread_ID = cmos.thread_create(&Graphics::manager, this, "Graphics Manager", 10, 4096);
-	cmos.sleep_untilMail(m_thread_ID);
+	const uint8 threadID = cmos.thread_create(&Graphics::manager, this, "Graphics Manager", 10, 8192);
+	cmos.sleep_untilMail(threadID);
 	
-	m_initialized = true;
 	return(OK);
 }
 
@@ -312,13 +222,119 @@ Graphics& Graphics::get()
 
 
 
-void Graphics::erase()
+uint8 Graphics::add_page()
+{
+	//	Lock semaphore for pages information
+	CMOS& cmos = CMOS::get();
+	if(cmos.semaphore_lock(&m_numberOfPages) != OK)
+	{
+		return(0xFF);
+	}
+	
+	
+	//	Check for maximum number of pages
+	if(m_numberOfPages >= 0xFF)
+	{
+		cmos.semaphore_unlock(&m_numberOfPages);
+		return(0xFF);
+	}
+	
+	
+	//	Add page and return page number
+	const uint8 pageNumber = m_numberOfPages;
+	m_numberOfPages++;
+	cmos.semaphore_unlock(&m_numberOfPages);
+	return(pageNumber);
+}
+
+
+feedback Graphics::remove_page(uint8 pageNumber)
+{
+	//	Check if there are any pages at all (minimum one page has to exist)
+	if(m_numberOfPages < 2 || pageNumber >= m_numberOfPages)
+	{
+		return(FAIL);
+	}
+	
+	
+	//	Check if the page to remove is the current page
+	//	If so, set current page to the previous page (except for page 0, then set it to page 1)
+	if(pageNumber == m_pageCurrent)
+	{
+		if(pageNumber == 0)
+		{
+			set_currentPage(1);
+		}
+		else
+		{
+			set_currentPage(pageNumber - 1);
+		}
+	}
+	
+	
+	//	Wait for the page change to be finished
+	CMOS& cmos = CMOS::get();
+	while(m_pageChangedActionNecessary == true)
+	{
+		#if defined(CORTEX_M7)
+			cmos.sleep_100us(1);
+		#endif
+		
+		#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
+			cmos.sleep_ms(1);
+		#endif
+	}
+	
+	
+	//	Lock semaphore for pages information
+	if(cmos.semaphore_lock(&m_numberOfPages) != OK)
+	{
+		return(FAIL);
+	}
+	
+	
+	//	We first need to erase all elements on this page
+	for(auto& i: m_elements)
+	{
+		if(i->m_page == pageNumber)
+		{
+			operator-=(*i);
+		}
+	}
+	
+	
+	//	Erase page and update page numbers of all elements on higher pages
+	for(auto& i: m_elements)
+	{
+		if(i->m_page > pageNumber)
+		{
+			i->m_page--;
+		}
+	}
+	
+	
+	//	Erase page
+	m_numberOfPages--;
+	
+	
+	//	Unlock semaphore for pages information
+	cmos.semaphore_unlock(&m_numberOfPages);
+	return(OK);
+}
+
+
+
+
+
+
+
+void Graphics::eraseAllElements()
 {
 	//	Dont optimize this Code here, because we modify the Array "m_elements" in the "operator()" Function
 	//	This leads to incorrect Function if not done like this here!
 	while(m_elements.get_size() > 0)
 	{
-		(*this) -= m_elements[0];
+		operator-=(*m_elements[0]);
 	}
 }
 
@@ -330,63 +346,46 @@ void Graphics::erase()
 
 void Graphics::register_touchData(Vec2 touchPoint, e_touchEvent touchEvent)
 {
-	if(m_initialized == true && touchEvent != e_touchEvent::INVALID)
+	if(touchEvent != e_touchEvent::INVALID)
 	{
-		//	Make the new Touch Event visible to all Elements
+		//	Make the new touch event visible to all elements
 		Element::m_touchEvent = touchEvent;
 		
 		
-		//	Determine which Element has been touched
-		for(int32 layer = c_numberOfLayers - 1; layer >= 0; layer--)
+		//	Determine which element has been touched
+		for(auto& i: m_elements)
 		{
-			if(m_layerTouchability[layer] == true)
+			if(i->m_page == m_pageCurrent && i->m_touchable == true && i->m_visible == true)
 			{
-				for(auto& i: m_elements)
+				const Vec2 touchPoint_relativeToElement(touchPoint - i->position);
+				if(i->containsPoint(touchPoint_relativeToElement) == true)
 				{
-					if(i->m_page == m_pageActual)
+					i->m_touchValid = true;
+					if(i->m_function_onCallback != nullptr)
 					{
-						if(i->m_layer == layer)
+						i->m_touchPosition = touchPoint_relativeToElement;
+						const String callbackThreadName = "Graphics Callback " + String((uint32) i);
+						CMOS& cmos = CMOS::get();
+						if(cmos.thread_doesExist(callbackThreadName) == false)
 						{
-							if(i->m_touchable == true && i->m_visible == true)
+							const uint8 thread_ID = cmos.thread_create(&Element::onCallback, i, callbackThreadName, 150);
+							if(thread_ID != CMOS::threadID_invalid)
 							{
-								const Vec2 touchPoint_relativeToLayer(touchPoint - Element::m_backBuffer[i->m_layer].position);
-								if(i->containsPoint(touchPoint_relativeToLayer) == true)
-								{
-									i->m_touchValid = true;
-									if(i->m_function_onCallback != nullptr)
-									{
-										i->m_touchPosition = touchPoint_relativeToLayer - i->position;
-										const String callbackThreadName = "Graphics Callback " + String((uint32) i);
-										CMOS& cmos = CMOS::get();
-										if(cmos.thread_doesExist(callbackThreadName) == false)
-										{
-											const uint8 thread_ID = cmos.thread_create(&Element::onCallback, i, callbackThreadName, 150);
-											if(thread_ID != CMOS::threadID_invalid)
-											{
-												cmos.thread_detachChildThread(thread_ID);
-												cmos.send_mail(thread_ID, (uint32) i);
-											}
-										}
-									}
-									layer = -1;
-									break;
-								}
-								else
-								{
-									i->m_touchValid = false;
-								}
-							}
-							else
-							{
-								i->m_touchValid = false;
+								cmos.thread_detachChildThread(thread_ID);
+								cmos.send_mail(thread_ID, (uint32) i);
 							}
 						}
 					}
-					else
-					{
-						i->m_touchValid = false;
-					}
+					return;
 				}
+				else
+				{
+					i->m_touchValid = false;
+				}
+			}
+			else
+			{
+				i->m_touchValid = false;
 			}
 		}
 	}
@@ -400,41 +399,39 @@ void Graphics::register_touchData(Vec2 touchPoint, e_touchEvent touchEvent)
 
 Graphics& Graphics::operator+=(Element& element)
 {
-	//	Check UpdateFunction, Page and Layer
-	if(element.m_function_onUpdate == nullptr || element.m_page >= c_numberOfPages || element.m_layer >= c_numberOfLayers)
+	//	Check updateFunction and page
+	if(element.m_function_onUpdate == nullptr || element.m_page >= m_numberOfPages)
 	{
 		return(*this);
 	}
 	
 	
-	//	Check Minimum Dimensions
+	//	Check minimum dimensions
 	if(element.size.x < Element::c_minimumSideLength || element.size.y < Element::c_minimumSideLength)
 	{
 		return(*this);
 	}
 	
 	
-	//	Check Display Borders
+	//	Check if the element fits into the framebuffer's dimensions
 	if(element.position.x < 0 || element.position.y < 0)
 	{
 		return(*this);
 	}
 	
-	Vec2 topRight(element.get_topRightCorner());
-	if(topRight.x >= Element::m_backBuffer[element.m_layer].size.x || topRight.y >= Element::m_backBuffer[element.m_layer].size.y)
+	const Vec2 topRight(element.get_topRightCorner());
+	if(topRight.x >= m_frameBufferShape.size.x || topRight.y >= m_frameBufferShape.size.y)
 	{
 		return(*this);
 	}
 	
 	
-	//	Check Overlap with exisiting Elements
-	for(uint32 i = 0; i < m_elements.get_size(); i++)
+	//	Check overlap with exisiting elements
+	for(auto& i: m_elements)
 	{
-		Element& element2 = *m_elements[i];
-		
-		if(element2.get_page() == element.get_page() && element2.get_layer() == element.get_layer())
+		if(i->m_page == element.m_page)
 		{
-			if(element2.doesOverlap(element) == true)
+			if(i->doesOverlap(element) == true)
 			{
 				return(*this);
 			}
@@ -442,8 +439,8 @@ Graphics& Graphics::operator+=(Element& element)
 	}
 	
 	
-	//	Create Semaphore for the new Element
-	//	This is needed for the Element to be able to lock itself on Update and Callback Function
+	//	Create semaphore for the new element
+	//	This is needed for the element to be able to lock itself on update and callback Function
 	CMOS& cmos = CMOS::get();
 	if(cmos.semaphore_create(&element) != OK)
 	{
@@ -451,63 +448,51 @@ Graphics& Graphics::operator+=(Element& element)
 	}
 	
 	
-	//	Add Element to Array
-	m_elements += &element;
-	element.m_rebuildRequested = true;
-	element.m_updateRequested = true;
+	//	Initially request update for this element
+	element.requestRebuild();
+	element.requestUpdate();
 	
+	
+	//	Add element to array
+	m_elements += &element;
 	return(*this);
 }
 
 
 Graphics& Graphics::operator-=(Element& element)
 {
-	//	Save Update Rate to not change the Element in Case it is just disabled temporarily
-	const uint16 updateRate_ms = element.m_updateRate_ms;
-	
-	
-	//	Wait for an eventual Update to be finished, but dont wait if we are executing this Function from the Update Function (wait forever...)
-	CMOS& cmos = CMOS::get();
-	if(cmos.semaphore_lock(&element) != OK)
-	{
-		return(*this);
-	}
-	
-	
-	//	Dont update this Element anymore
-	element.m_updateRate_ms = 0;
-	element.m_updateRequested = false;
-	element.m_rebuildRequested = false;
-	
-	
 	const uint32 index = m_elements.find(&element);
 	if(m_elements.is_valid(index) == true)
 	{
-		//	Clear Element from Screen
-		element.clear();
-		
-		
-		//	Erase Element from Array
+		//	Erase element from array
 		m_elements.erase(index);
 		
 		
-		//	Erase Semaphore of this Element
-		if(cmos.semaphore_erase(&element) != OK)
+		//	Set callback function to nullptr to avoid callback execution after the element has been erased
+		element.set_function_onCallback(nullptr);
+		
+		
+		//	Sleep shortly to be sure, that no update function is running for this element
+		CMOS& cmos = CMOS::get();
+		cmos.sleep_ms(10);
+		
+		
+		//	Lock semaphore for this element
+		if(cmos.semaphore_lock(&element) != OK)
 		{
 			return(*this);
 		}
 		
 		
-		//	Reload Layer to Frontbuffer
-		transferLayerToFrontbuffer(element.m_layer);
+		//	Clear element from both framebuffers
+		element.clearFromBothFramebuffers();
+		
+		
+		//	Erase semaphore of this element
+		if(cmos.semaphore_erase(&element) != OK)
+		{
+			return(*this);
+		}
 	}
-	else
-	{
-		cmos.semaphore_unlock(&element);
-	}
-	
-	
-	//	Restore changed Properties
-	element.m_updateRate_ms = updateRate_ms;
 	return(*this);
 }

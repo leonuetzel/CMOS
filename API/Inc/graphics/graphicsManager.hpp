@@ -39,33 +39,28 @@ class Graphics
 		I_DisplayDriver* m_displayDriver;
 		I_GraphicAccelerator* m_graphicAccelerator;
 		
-		bool m_initialized;
-		uint8 m_thread_ID;
+		Rect m_frameBufferShape;
+		Color* m_frameBufferData[2];
+		uint8 m_frameBufferIndex;
 		
-		Array<Element*> m_elements;
+		bool m_pageChangedActionNecessary;
+		
 		uint8 m_fps;
-		uint8 c_numberOfLayers;
-		uint8 c_numberOfPages;
-		uint8 m_pageActual;
-		
-		bool m_reloadRequested;
-		
 		Color m_backgroundColor;
-		RectGraphic m_background;
-		bool m_background_visible;
-		Array<bool> m_layerTouchability;
+		
+		uint8 m_numberOfPages;
+		uint8 m_pageCurrent;
+		Array<Element*> m_elements;
 		
 		
 		//	Constructor and Destructor
-		constexpr inline Graphics();
+		inline Graphics();
 		Graphics(const Graphics& graphics) = delete;
 		inline ~Graphics();
 		
 		
 		//	Member Functions
 		void manager();
-		
-		feedback clear_layer(uint8 layer);
 		
 		
 		//	Friends
@@ -77,34 +72,30 @@ class Graphics
 		
 	public:
 		
-		feedback init(I_GraphicAccelerator& graphicAccelerator, I_DisplayDriver& displayDriver, I_Semaphore& semaphore, uint8 numberOfPages, const Array<Color*>& backBuffer, Color* backgroundBuffer);
+		feedback init(I_GraphicAccelerator& graphicAccelerator, I_DisplayDriver& displayDriver, Rect frameShape, Color* frameBuffer1, Color* frameBuffer2);
 		static Graphics& get();
 		
+		
+		//	Display
+		inline Vec2 get_displayDimensions() const;
+		constexpr inline uint8 get_fps() const;
 		inline feedback set_backgroundColor(Color backgroundColor);
+		constexpr inline Color get_backgroundColor() const;
 		
 		
-		inline Vec2 get_displayDimensions();
-		inline Rect get_layerData(uint8 layer);
-		constexpr inline uint8 get_numberOfLayers() const;
-		inline feedback set_layerAlpha(uint8 layer, uint8 alpha);
-		inline feedback set_layerTouchability(uint8 layer, bool touchable);
-		
-		constexpr inline uint8 get_fps();
-		
-		constexpr inline feedback set_pageActual(uint8 page);
-		constexpr inline uint8 get_pageActual() const;
+		//	Pages
+		uint8 add_page();
+		feedback remove_page(uint8 pageNumber);
 		constexpr inline uint8 get_numberOfPages() const;
+		constexpr inline feedback set_currentPage(uint8 page);
+		constexpr inline uint8 get_currentPage() const;
 		
-		constexpr inline void set_background_visibility(bool visible);
-		constexpr inline feedback set_pixel_background(Vec2 pixelPosition, Color color);
 		
-		inline void transferLayerToFrontbuffer();
-		inline feedback transferLayerToFrontbuffer(uint8 layer);
-		
-		inline bool contains(Element& element) const;
-		inline bool contains(Element* element) const;
-		inline Array<Element*> list() const;
-		void erase();
+		//	Elements
+		inline bool containsElement(Element& element) const;
+		inline bool containsElement(Element* element) const;
+		inline Array<Element*> listElements() const;
+		void eraseAllElements();
 		
 		void register_touchData(Vec2 touchPoint, e_touchEvent touchEvent);
 		
@@ -130,26 +121,26 @@ class Graphics
 /*                      						Private	  			 						 						 */
 /*****************************************************************************/
 
-constexpr inline Graphics::Graphics()
+inline Graphics::Graphics()
 	:	m_displayDriver(nullptr),
 		m_graphicAccelerator(nullptr),
 		
-		m_initialized(false),
-		m_thread_ID(CMOS::threadID_invalid),
+		m_frameBufferShape(Vec2(0, 0), Vec2(0, 0)),
+		m_frameBufferData(),
+		m_frameBufferIndex(0),
 		
-		m_elements(),
+		m_pageChangedActionNecessary(false),
+		
 		m_fps(0),
-		c_numberOfLayers(0),
-		c_numberOfPages(0),
-		m_pageActual(0),
-		
-		m_reloadRequested(true),
-		
 		m_backgroundColor(Colors::transparent),
-		m_background(),
-		m_background_visible(false)
+		
+		m_numberOfPages(1),
+		m_pageCurrent(0),
+		
+		m_elements()
 {
-	m_elements.erase();
+	m_frameBufferData[0] = nullptr;
+	m_frameBufferData[1] = nullptr;
 }
 
 
@@ -172,9 +163,21 @@ inline Graphics::~Graphics()
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
+inline Vec2 Graphics::get_displayDimensions() const
+{
+	return(m_displayDriver->get_displayDimensions());
+}
+
+
+constexpr inline uint8 Graphics::get_fps() const
+{
+	return(m_fps);
+}
+
+
 inline feedback Graphics::set_backgroundColor(Color backgroundColor)
 {
-	if(m_displayDriver->set_colorBackground(backgroundColor.red, backgroundColor.green, backgroundColor.blue) == OK)
+	if(m_displayDriver->set_colorBackground(backgroundColor) == OK)
 	{
 		m_backgroundColor = backgroundColor;
 		return(OK);
@@ -183,152 +186,59 @@ inline feedback Graphics::set_backgroundColor(Color backgroundColor)
 }
 
 
-
-
-
-
-
-inline Vec2 Graphics::get_displayDimensions()
+constexpr inline Color Graphics::get_backgroundColor() const
 {
-	return(m_displayDriver->get_displayDimensions());
-}
-
-
-inline Rect Graphics::get_layerData(uint8 layer)
-{
-	return(m_displayDriver->get_layerData(layer));
-}
-
-
-constexpr inline uint8 Graphics::get_numberOfLayers() const
-{
-	return(c_numberOfLayers);
-}
-
-
-inline feedback Graphics::set_layerAlpha(uint8 layer, uint8 alpha)
-{
-	return(m_displayDriver->set_layerAlpha(layer, alpha));
-}
-
-
-inline feedback Graphics::set_layerTouchability(uint8 layer, bool touchable)
-{
-	if(layer < c_numberOfLayers)
-	{
-		m_layerTouchability[layer] = touchable;
-		return(OK);
-	}
-	return(FAIL);
+	return(m_backgroundColor);
 }
 
 
 
 
 
-
-
-constexpr inline uint8 Graphics::get_fps()
-{
-	return(m_fps);
-}
-
-
-
-
-
-
-
-constexpr inline feedback Graphics::set_pageActual(uint8 page)
-{
-	if(page < c_numberOfPages)
-	{
-		m_pageActual = page;
-		m_reloadRequested = true;
-		return(OK);
-	}
-	
-	return(FAIL);
-}
-
-
-constexpr inline uint8 Graphics::get_pageActual() const
-{
-	return(m_pageActual);
-}
 
 
 constexpr inline uint8 Graphics::get_numberOfPages() const
 {
-	return(c_numberOfPages);
+	return(m_numberOfPages);
 }
 
 
-
-
-
-
-
-constexpr inline void Graphics::set_background_visibility(bool visible)
+constexpr inline feedback Graphics::set_currentPage(uint8 page)
 {
-	m_background_visible = visible;
-}
-
-
-constexpr inline feedback Graphics::set_pixel_background(Vec2 pixelPosition, Color color)
-{
-	if(m_background.contains(pixelPosition) == false || m_background.data == nullptr)
+	if(page < m_numberOfPages)
 	{
-		return(FAIL);
-	}
-	
-	Color* pixel = m_background.data + ((m_background.size.y - pixelPosition.y - 1) * m_background.size.x + pixelPosition.x);
-	*pixel = color;
-	
-	return(OK);
-}
-
-
-
-
-
-
-
-inline void Graphics::transferLayerToFrontbuffer()
-{
-	CMOS::get().send_mail(m_thread_ID, c_numberOfLayers);
-}
-
-
-inline feedback Graphics::transferLayerToFrontbuffer(uint8 layer)
-{
-	if(layer < c_numberOfLayers)
-	{
-		CMOS::get().send_mail(m_thread_ID, layer);
+		m_pageCurrent = page;
+		m_pageChangedActionNecessary = true;
 		return(OK);
 	}
 	return(FAIL);
 }
 
 
+constexpr inline uint8 Graphics::get_currentPage() const
+{
+	return(m_pageCurrent);
+}
 
 
 
 
 
-inline bool Graphics::contains(Element& element) const
+
+
+inline bool Graphics::containsElement(Element& element) const
 {
 	return(m_elements.contains(&element));
 }
 
 
-inline bool Graphics::contains(Element* element) const
+inline bool Graphics::containsElement(Element* element) const
 {
 	return(m_elements.contains(element));
 }
 
 
-inline Array<Element*> Graphics::list() const
+inline Array<Element*> Graphics::listElements() const
 {
 	return(m_elements);
 }

@@ -59,27 +59,28 @@ class Element	:	protected Rect
 	private:
 		
 		//	Static Member
-		static RectGraphic* m_backBuffer;
 		static I_GraphicAccelerator* m_graphicAccelerator;
 		
 		
 		//	Non-static Member
-		uint64 m_ticks;
+		uint8 m_page;
+		uint32 m_updatePeriodInFrames;
+		f_element m_function_onUpdate;
 		
 		bool m_visible;
 		bool m_touchable;
-		
-		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
 		f_element m_function_onChangePage;
-		f_element m_function_onChangeLayer;
-		f_element m_function_onChangePosition;
-		f_element m_function_onChangeSize;
+		f_element m_function_onChangeShape;
 		f_element m_function_onChangePageActual;
-		uint16 m_updateRate_ms;
 		
-		uint8 m_page;
-		uint8 m_layer;
+		const Rect& m_backBufferShape;
+		Color* m_backBufferData[2];
+		uint8& m_backbufferIndex;
+		
+		uint64 m_frameCounterAtLastUpdate;
+		bool m_areBothFramebuffersIdentical;
+		bool m_rebuildRequested;
 		
 		
 		//	Constructor and Destructor
@@ -92,6 +93,8 @@ class Element	:	protected Rect
 		void onChangePageActual();
 		
 		feedback draw_rectangleFilledManual(Rect rectangle, Color color);
+		void syncFramebuffers();
+		feedback clearFromBothFramebuffers();
 		
 		
 		//	Friends
@@ -106,8 +109,6 @@ class Element	:	protected Rect
 		static constexpr int16 c_frameRoundness = 8;
 		
 		e_frameType m_frameType;
-		bool m_rebuildRequested;
-		bool m_updateRequested;
 		
 		
 		//	Touch Related
@@ -126,40 +127,35 @@ class Element	:	protected Rect
 		
 		static constexpr int16 c_minimumSideLength = c_frameRoundness * 2;
 		
-		constexpr inline Element(Rectangle shape, uint8 page, uint8 layer, f_element onUpdateFunction, f_element onCallbackFunction, uint32 updateRate_ms, e_frameType frameType);
+		Element(Rect shape, uint8 page, uint32 updatePeriodInFrames, f_element onUpdateFunction);
 		virtual ~Element();
 		
 		constexpr inline feedback		set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
 		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
-		constexpr inline void				set_function_onChangeLayer(f_element onChangeLayerFunction);
-		constexpr inline void				set_function_onChangePosition(f_element onChangePositionFunction);
-		constexpr inline void				set_function_onChangeSize(f_element onChangeSizeFunction);
+		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
 		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
 		constexpr inline f_element	get_function_onChangePage() const;
-		constexpr inline f_element	get_function_onChangeLayer() const;
-		constexpr inline f_element	get_function_onChangePosition() const;
-		constexpr inline f_element	get_function_onChangeSize() const;
+		constexpr inline f_element	get_function_onChangeShape() const;
 		constexpr inline f_element	get_function_onChangePageActual() const;
 		
-		constexpr inline void set_updateRate_ms(uint32 updateRate_ms);
+		constexpr inline void set_frameType(e_frameType frameType);
 		constexpr inline void set_visibility(bool visible);
 		constexpr inline void set_touchability(bool touchable);
+		constexpr inline void set_updatePeriodInFrames(uint32 newUpdatePeriodInFrames);
 		feedback set_page(uint32 newPage);
-		feedback set_layer(uint32 newLayer);
 		feedback set_position(Vec2 newPosition);
 		feedback set_size(Vec2 newSize);
 		
 		constexpr inline Vec2 get_position() const;
 		constexpr inline Vec2 get_size() const;
 		constexpr inline uint32 get_page() const;
-		constexpr inline uint32 get_layer() const;
-		constexpr inline uint32 get_updateRate_ms() const;
 		constexpr inline e_frameType get_frameType() const;
 		constexpr inline bool get_visibility() const;
 		constexpr inline bool get_touchability() const;
+		constexpr inline uint32 get_updatePeriodInFrames() const;
 		inline Graphics::e_touchEvent get_touchEvent() const;
 		constexpr inline Vec2 get_touchPosition() const;
 		constexpr inline bool get_touchValid() const;
@@ -192,11 +188,9 @@ class Element	:	protected Rect
 		feedback draw_circle(Vec2 center, uint32 radius, f_color color);
 		feedback draw_circleFilled(Vec2 center, uint32 radius, f_color color);
 		
-		constexpr inline void requestRebuild();
 		constexpr inline void requestUpdate();
-		
+		constexpr inline void requestRebuild();
 		constexpr inline bool isRebuildRequested() const;
-		constexpr inline bool isUpdateRequested() const;
 };
 
 
@@ -229,35 +223,6 @@ class Element	:	protected Rect
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
-constexpr inline Element::Element(Rect shape, uint8 page, uint8 layer, f_element onUpdateFunction, f_element onCallbackFunction, uint32 updateRate_ms, e_frameType frameType)
-	:	Rectangle(shape),
-		m_ticks(0),
-		m_visible(true),
-		m_touchable(true),
-		m_function_onUpdate(onUpdateFunction),
-		m_function_onCallback(onCallbackFunction),
-		m_function_onChangePage(nullptr),
-		m_function_onChangeLayer(nullptr),
-		m_function_onChangePosition(nullptr),
-		m_function_onChangeSize(nullptr),
-		m_function_onChangePageActual(nullptr),
-		m_updateRate_ms(updateRate_ms),
-		m_page(page),
-		m_layer(layer),
-		m_frameType(frameType),
-		m_rebuildRequested(false),
-		m_updateRequested(false),
-		m_touchValid(false)
-{
-	
-}
-
-
-
-
-
-
-
 constexpr inline feedback Element::set_function_onUpdate(f_element onUpdateFunction)
 {
 	if(onUpdateFunction == nullptr)
@@ -281,21 +246,9 @@ constexpr inline void Element::set_function_onChangePage(f_element onChangePageF
 }
 
 
-constexpr inline void Element::set_function_onChangeLayer(f_element onChangeLayerFunction)
+constexpr inline void Element::set_function_onChangeShape(f_element onChangeShapeFunction)
 {
-	m_function_onChangeLayer = onChangeLayerFunction;
-}
-
-
-constexpr inline void Element::set_function_onChangePosition(f_element onChangePositionFunction)
-{
-	m_function_onChangePosition = onChangePositionFunction;
-}
-
-
-constexpr inline void Element::set_function_onChangeSize(f_element onChangeSizeFunction)
-{
-	m_function_onChangeSize = onChangeSizeFunction;
+	m_function_onChangeShape = onChangeShapeFunction;
 }
 
 
@@ -323,21 +276,9 @@ constexpr inline Element::f_element Element::get_function_onChangePage() const
 }
 
 
-constexpr inline Element::f_element Element::get_function_onChangeLayer() const
+constexpr inline Element::f_element Element::get_function_onChangeShape() const
 {
-	return(m_function_onChangeLayer);
-}
-
-
-constexpr inline Element::f_element Element::get_function_onChangePosition() const
-{
-	return(m_function_onChangePosition);
-}
-
-
-constexpr inline Element::f_element Element::get_function_onChangeSize() const
-{
-	return(m_function_onChangeSize);
+	return(m_function_onChangeShape);
 }
 
 
@@ -352,37 +293,27 @@ constexpr inline Element::f_element Element::get_function_onChangePageActual() c
 
 
 
-constexpr inline void Element::set_updateRate_ms(uint32 updateRate_ms)
+constexpr inline void Element::set_frameType(e_frameType frameType)
 {
-	m_updateRate_ms = updateRate_ms;
+	m_frameType = frameType;
 }
 
 
 constexpr inline void Element::set_visibility(bool visible)
 {
-	if(m_visible == visible)
-	{
-		return;
-	}
 	m_visible = visible;
-	
-	
-	
-	if(m_visible == false)
-	{
-		clear();
-	}
-	else
-	{
-		m_rebuildRequested = true;
-		m_updateRequested = true;
-	}
 }
 
 
 constexpr inline void Element::set_touchability(bool touchable)
 {
 	m_touchable = touchable;
+}
+
+
+constexpr inline void Element::set_updatePeriodInFrames(uint32 newUpdatePeriodInFrames)
+{
+	m_updatePeriodInFrames = newUpdatePeriodInFrames;
 }
 
 
@@ -409,18 +340,6 @@ constexpr inline uint32 Element::get_page() const
 }
 
 
-constexpr inline uint32 Element::get_layer() const
-{
-	return(m_layer);
-}
-
-
-constexpr inline uint32 Element::get_updateRate_ms() const
-{
-	return(m_updateRate_ms);
-}
-
-
 constexpr inline Element::e_frameType Element::get_frameType() const
 {
 	return(m_frameType);
@@ -436,6 +355,12 @@ constexpr inline bool Element::get_visibility() const
 constexpr inline bool Element::get_touchability() const
 {
 	return(m_touchable);
+}
+
+
+constexpr inline uint32 Element::get_updatePeriodInFrames() const
+{
+	return(m_updatePeriodInFrames);
 }
 
 
@@ -473,30 +398,20 @@ inline void Element::clear()
 
 
 
+constexpr inline void Element::requestUpdate()
+{
+	//	Request an update by setting the "m_frameCounterAtLastUpdate" to 0xFFFF FFFF FFFF FFFF
+	m_frameCounterAtLastUpdate = 0xFFFFFFFFFFFFFFFF;
+}
+
+
 constexpr inline void Element::requestRebuild()
 {
 	m_rebuildRequested = true;
 }
 
 
-constexpr inline void Element::requestUpdate()
-{
-	m_updateRequested = true;
-}
-
-
-
-
-
-
-
 constexpr inline bool Element::isRebuildRequested() const
 {
 	return(m_rebuildRequested);
-}
-
-
-constexpr inline bool Element::isUpdateRequested() const
-{
-	return(m_updateRequested);
 }

@@ -21,8 +21,8 @@ CODE_RAM void Button::onUpdate(Element& element)
 	Button& button = (Button&) element;
 	
 	
-	//	Full Rebuild
-	if(button.m_rebuildRequested == true)
+	//	Full rebuild
+	if(button.isRebuildRequested() == true)
 	{
 		if(button.m_isPressed == false)
 		{
@@ -37,23 +37,19 @@ CODE_RAM void Button::onUpdate(Element& element)
 	}
 	
 	
-	//	Normal Update
-	if(button.m_updateRequested == true)
+	if(button.m_textActual.text != button.m_textNew.text || button.m_textActual.font != button.m_textNew.font || button.m_textActual.color != button.m_textNew.color)
 	{
-		if(button.m_textActual.text != button.m_textNew.text || button.m_textActual.font != button.m_textNew.font || button.m_textActual.color != button.m_textNew.color)
-		{
-			button.draw_string(button.m_textActual.text, Element::e_align::CENTER, *button.m_textActual.font, button.m_colorBackground, true);
-			
-			button.m_textActual.text	= button.m_textNew.text;
-			button.m_textActual.font	= button.m_textNew.font;
-			button.m_textActual.color	= button.m_textNew.color;
-			
-			button.draw_string(button.m_textActual.text, Element::e_align::CENTER, *button.m_textActual.font, button.m_textActual.color, true);
-		}
+		button.draw_string(button.m_textActual.text, Element::e_align::CENTER, *button.m_textActual.font, button.m_colorBackground, true);
+		
+		button.m_textActual.text	= button.m_textNew.text;
+		button.m_textActual.font	= button.m_textNew.font;
+		button.m_textActual.color	= button.m_textNew.color;
+		
+		button.draw_string(button.m_textActual.text, Element::e_align::CENTER, *button.m_textActual.font, button.m_textActual.color, true);
 	}
 	
 	
-	//	Execute User Update
+	//	Execute user update
 	if(button.m_function_onUpdate != nullptr)
 	{
 		button.m_function_onUpdate(button);
@@ -73,32 +69,33 @@ CODE_RAM void Button::onCallback(Element& element)
 		if(m_touchEvent == Graphics::e_touchEvent::TOUCH)
 		{
 			button.m_isPressed = true;
-			button.m_rebuildRequested = true;
+			button.requestRebuild();
 		}
 		
 		counter_ms++;
 		
 		
-		//	Unlock Semaphore so that an Update can take Place
+		//	Unlock semaphore so that an update can take place
 		cmos.semaphore_unlock(&element);
 		cmos.sleep_ms(1);
 		cmos.semaphore_lock(&element);
 	}
 	
 	
-	//	Draw Button in un-pressed Condition
+	//	Draw button in un-pressed condition
 	button.m_isPressed = false;
-	button.m_rebuildRequested = true;
+	button.requestRebuild();
+	
 	cmos.semaphore_unlock(&element);
 	cmos.sleep_ms(1);
 	cmos.semaphore_lock(&element);
 	
 	
-	//	Execute User Callback
+	//	Execute user callback
 	if(button.m_function_onCallback != nullptr && counter_ms >= button.m_pressTime_ms && button.m_touchValid == true)
 	{
 		button.m_function_onCallback(element);
-		button.m_updateRequested = true;
+		button.requestUpdate();
 	}
 }
 
@@ -114,35 +111,13 @@ CODE_RAM void Button::onChangePage(Element& element)
 }
 
 
-CODE_RAM void Button::onChangeLayer(Element& element)
+CODE_RAM void Button::onChangeShape(Element& element)
 {
 	Button& button = (Button&) element;
 	
-	if(button.m_function_onChangeLayer != nullptr)
+	if(button.m_function_onChangeShape != nullptr)
 	{
-		button.m_function_onChangeLayer(element);
-	}
-}
-
-
-CODE_RAM void Button::onChangePosition(Element& element)
-{
-	Button& button = (Button&) element;
-	
-	if(button.m_function_onChangePosition != nullptr)
-	{
-		button.m_function_onChangePosition(element);
-	}
-}
-
-
-CODE_RAM void Button::onChangeSize(Element& element)
-{
-	Button& button = (Button&) element;
-	
-	if(button.m_function_onChangeSize != nullptr)
-	{
-		button.m_function_onChangeSize(element);
+		button.m_function_onChangeShape(element);
 	}
 }
 

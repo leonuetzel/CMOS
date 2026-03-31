@@ -41,16 +41,14 @@ class Loading: public Element
 		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
 		f_element m_function_onChangePage;
-		f_element m_function_onChangeLayer;
-		f_element m_function_onChangePosition;
-		f_element m_function_onChangeSize;
+		f_element m_function_onChangeShape;
+		f_element m_function_onChangePageActual;
 		
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
 		static void onChangePage(Element& element);
-		static void onChangeLayer(Element& element);
-		static void onChangePosition(Element& element);
-		static void onChangeSize(Element& element);
+		static void onChangeShape(Element& element);
+		static void onChangePageActual(Element& element);
 		
 		
 		
@@ -65,15 +63,13 @@ class Loading: public Element
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
 		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
-		constexpr inline void				set_function_onChangeLayer(f_element onChangeLayerFunction);
-		constexpr inline void				set_function_onChangePosition(f_element onChangePositionFunction);
-		constexpr inline void				set_function_onChangeSize(f_element onChangeSizeFunction);
+		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
+		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
 		constexpr inline f_element	get_function_onChangePage() const;
-		constexpr inline f_element	get_function_onChangeLayer() const;
-		constexpr inline f_element	get_function_onChangePosition() const;
-		constexpr inline f_element	get_function_onChangeSize() const;
+		constexpr inline f_element	get_function_onChangeShape() const;
+		constexpr inline f_element	get_function_onChangePageActual() const;
 		
 		void set_progressInformation(uint8* progress);
 };
@@ -129,18 +125,14 @@ inline Loading::Loading(Element element, const Font& font, Color colorText, Colo
 		m_function_onUpdate(Element::get_function_onUpdate()),
 		m_function_onCallback(Element::get_function_onCallback()),
 		m_function_onChangePage(Element::get_function_onChangePage()),
-		m_function_onChangeLayer(Element::get_function_onChangeLayer()),
-		m_function_onChangePosition(Element::get_function_onChangePosition()),
-		m_function_onChangeSize(Element::get_function_onChangeSize())
+		m_function_onChangeShape(Element::get_function_onChangeShape())
 {
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
 	Element::set_function_onChangePage(onChangePage);
-	Element::set_function_onChangeLayer(onChangeLayer);
-	Element::set_function_onChangePosition(onChangePosition);
-	Element::set_function_onChangeSize(onChangeSize);
+	Element::set_function_onChangeShape(onChangeShape);
 	
-	set_updateRate_ms(1);
+	set_updatePeriodInFrames(1);
 }
 
 
@@ -165,18 +157,14 @@ inline Loading::Loading(Element element, const Font& font, Color colorText, Colo
 		m_function_onUpdate(Element::get_function_onUpdate()),
 		m_function_onCallback(Element::get_function_onCallback()),
 		m_function_onChangePage(Element::get_function_onChangePage()),
-		m_function_onChangeLayer(Element::get_function_onChangeLayer()),
-		m_function_onChangePosition(Element::get_function_onChangePosition()),
-		m_function_onChangeSize(Element::get_function_onChangeSize())
+		m_function_onChangeShape(Element::get_function_onChangeShape())
 {
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
 	Element::set_function_onChangePage(onChangePage);
-	Element::set_function_onChangeLayer(onChangeLayer);
-	Element::set_function_onChangePosition(onChangePosition);
-	Element::set_function_onChangeSize(onChangeSize);
+	Element::set_function_onChangeShape(onChangeShape);
 	
-	set_updateRate_ms(1);
+	set_updatePeriodInFrames(1);
 }
 
 
@@ -203,21 +191,9 @@ constexpr inline void Loading::set_function_onChangePage(f_element onChangePageF
 }
 
 
-constexpr inline void Loading::set_function_onChangeLayer(f_element onChangeLayerFunction)
+constexpr inline void Loading::set_function_onChangeShape(f_element onChangeShapeFunction)
 {
-	m_function_onChangeLayer = onChangeLayerFunction;
-}
-
-
-constexpr inline void Loading::set_function_onChangePosition(f_element onChangePositionFunction)
-{
-	m_function_onChangePosition = onChangePositionFunction;
-}
-
-
-constexpr inline void Loading::set_function_onChangeSize(f_element onChangeSizeFunction)
-{
-	m_function_onChangeSize = onChangeSizeFunction;
+	m_function_onChangeShape = onChangeShapeFunction;
 }
 
 
@@ -239,19 +215,7 @@ constexpr inline Element::f_element Loading::get_function_onChangePage() const
 }
 
 
-constexpr inline Element::f_element Loading::get_function_onChangeLayer() const
+constexpr inline Element::f_element Loading::get_function_onChangeShape() const
 {
-	return(m_function_onChangeLayer);
-}
-
-
-constexpr inline Element::f_element Loading::get_function_onChangePosition() const
-{
-	return(m_function_onChangePosition);
-}
-
-
-constexpr inline Element::f_element Loading::get_function_onChangeSize() const
-{
-	return(m_function_onChangeSize);
+	return(m_function_onChangeShape);
 }

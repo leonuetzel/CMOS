@@ -123,7 +123,7 @@ constexpr inline bool RectGraphic::is_dataValid() const
 
 constexpr inline Color* RectGraphic::get_data(Rect rectangle) const
 {
-	Vec2 position_relative = rectangle.position - position; 
+	const Vec2 position_relative = rectangle.position - position; 
 	return(data + (size.y - position_relative.y - rectangle.size.y) * size.x + position_relative.x);
 }
 

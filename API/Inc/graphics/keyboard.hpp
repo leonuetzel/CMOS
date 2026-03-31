@@ -48,9 +48,12 @@ class Keyboard
 		}Key;
 		
 		static const Key c_layout[44];
+		static UniqueArray<Keyboard*> m_keyboards;
 		
 		
 		//	Non-static Member
+		const uint8 m_pageOnCreation;
+		const uint8 m_page;
 		Array<Key> m_keys;
 		Element* m_text;
 		String m_buffer;
@@ -61,9 +64,7 @@ class Keyboard
 		
 		
 		//	Constructor and Destructor
-		Keyboard();
-		Keyboard(const Keyboard& keyboard) = delete;
-		~Keyboard();
+		
 		
 		
 		//	Member Functions
@@ -82,7 +83,9 @@ class Keyboard
 		
 	public:
 		
-		static Keyboard& get();
+		Keyboard();
+		Keyboard(const Keyboard& keyboard) = delete;
+		~Keyboard();
 		
 		String operator()(bool showNow = true, bool waitForEnter = true);
 		

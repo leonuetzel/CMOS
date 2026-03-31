@@ -8,7 +8,7 @@
 /*                    Globals and Static Initialization					 						 */
 /*****************************************************************************/
 
-MessageBox* MessageBox::m_messageBox = nullptr;
+UniqueArray<MessageBox*> MessageBox::m_messageBoxes;
 
 
 
@@ -18,35 +18,59 @@ MessageBox* MessageBox::m_messageBox = nullptr;
 
 void MessageBox::update(Element& element)
 {
-	if(m_messageBox != nullptr)
+	//	Find the MessageBox which has to be updated
+	MessageBox* messageBox = nullptr;
+	for(auto& i: m_messageBoxes)
 	{
-		element.draw_string(m_messageBox->m_message, Element::e_align::CENTER, Fonts::CalibriLight24, Colors::white, true);
+		if(i->m_page == element.get_page())
+		{
+			messageBox = i;
+			break;
+		}
 	}
+	if(messageBox == nullptr)
+	{
+		return;
+	}
+	
+	
+	//	Update message text
+	element.draw_string(messageBox->m_message, Element::e_align::CENTER, Fonts::CalibriLight24, Colors::white, true);
 }
 
 
 void MessageBox::callback(Element& element)
 {
-	if(m_messageBox == nullptr)
+	//	Find the MessageBox which has been interacted with
+	MessageBox* messageBox = nullptr;
+	for(auto& i: m_messageBoxes)
+	{
+		if(i->m_page == element.get_page())
+		{
+			messageBox = i;
+			break;
+		}
+	}
+	if(messageBox == nullptr)
 	{
 		return;
 	}
 	
 	
-	//	Check if another Button has already been pressed
-	if(m_messageBox->m_userChoice != e_button::NONE)
+	//	Check if another button has already been pressed
+	if(messageBox->m_userChoice != e_button::NONE)
 	{
 		return;
 	}
 	
 	
-	//	Enter User Choice
+	//	Enter user choice
 	Button* button = (Button*) &element;
 	for(uint32 i = 0; i < 6; i++)
 	{
-		if(m_messageBox->m_buttons[i] == button)
+		if(messageBox->m_buttons[i] == button)
 		{
-			m_messageBox->m_userChoice = (e_button) i;
+			messageBox->m_userChoice = (e_button) i;
 			break;
 		}
 	}
@@ -67,36 +91,45 @@ void MessageBox::callback(Element& element)
 /*****************************************************************************/
 
 MessageBox::MessageBox(e_type type, const String& message)
-	:	m_message(message),
+	:	m_pageOnCreation(Graphics::get().get_currentPage()),
+		m_page(Graphics::get().add_page()),
+		m_message(message),
 		m_userChoice(e_button::NONE)
 {
-	if(m_messageBox != nullptr)
+	if(m_page == 0xFF)
 	{
 		return;
 	}
 	
 	
-	//	Set all Button Pointer to null
+	//	Set all button pointer to null
 	for(auto& i: m_buttons)
 	{
 		i = nullptr;
 	}
 	
 	
-	//	Get Display Dimensions
+	//	Get display dimensions
 	Graphics& graphics = Graphics::get();
 	const Vec2 displaySize = graphics.get_displayDimensions();
 	
 	
-	//	Button Size
+	//	Show MessageBox on its own page which has been freshly created by the constructor (m_page)
+	if(graphics.set_currentPage(m_page) != OK)
+	{
+		return;
+	}
+	
+	
+	//	Button size
 	constexpr Vec2 buttonSize = Vec2(150, 100);
 	
 	
-	//	Center Position of Middle Button
+	//	Center position of middle button
 	const Vec2 center = Vec2(displaySize.x / 2, displaySize.y / 3);
 	
 	
-	//	Create Buttons depending on Type
+	//	Create buttons depending on type
 	switch(type)
 	{
 		case e_type::OK_:
@@ -107,12 +140,9 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Element
 				(
 					Rect(center - buttonSize / 2, buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"OK",
 				Fonts::CalibriLight24,
@@ -122,6 +152,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::royal_blue,
 				c_pressTime
 			);
+			button_ok->set_function_onCallback(callback);
+			button_ok->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_ok;
 			m_buttons[(uint8) e_button::OK_] = button_ok;
 		}
@@ -129,22 +161,19 @@ MessageBox::MessageBox(e_type type, const String& message)
 		
 		case e_type::OK_CANCEL:
 		{
-			//	Bottom Left Button Position for a single Button
+			//	Bottom left button position for a single button
 			Vec2 position(center - buttonSize / 2);
 			
 			
-			//	OK Button
+			//	OK button
 			Button* button_ok = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x - buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"OK",
 				Fonts::CalibriLight24,
@@ -154,22 +183,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::royal_blue,
 				c_pressTime
 			);
+			button_ok->set_function_onCallback(callback);
+			button_ok->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_ok;
 			m_buttons[(uint8) e_button::OK_] = button_ok;
 			
 			
-			//	Cancel Button
+			//	Cancel button
 			Button* button_cancel = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x + buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Cancel",
 				Fonts::CalibriLight24,
@@ -179,6 +207,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::yellow,
 				c_pressTime
 			);
+			button_cancel->set_function_onCallback(callback);
+			button_cancel->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_cancel;
 			m_buttons[(uint8) e_button::CANCEL] = button_cancel;
 		}
@@ -186,22 +216,19 @@ MessageBox::MessageBox(e_type type, const String& message)
 		
 		case e_type::RETRY_CANCEL:
 		{
-			//	Bottom Left Button Position for a single Button
+			//	Bottom left button position for a single button
 			Vec2 position(center - buttonSize / 2);
 			
 			
-			//	Retry Button
+			//	Retry button
 			Button* button_retry = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x - buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Retry",
 				Fonts::CalibriLight24,
@@ -211,22 +238,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::turquoise,
 				c_pressTime
 			);
+			button_retry->set_function_onCallback(callback);
+			button_retry->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_retry;
 			m_buttons[(uint8) e_button::RETRY] = button_retry;
 			
 			
-			//	Cancel Button
+			//	Cancel button
 			Button* button_cancel = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x + buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Cancel",
 				Fonts::CalibriLight24,
@@ -236,6 +262,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::yellow,
 				c_pressTime
 			);
+			button_cancel->set_function_onCallback(callback);
+			button_cancel->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_cancel;
 			m_buttons[(uint8) e_button::CANCEL] = button_cancel;
 		}
@@ -243,22 +271,19 @@ MessageBox::MessageBox(e_type type, const String& message)
 		
 		case e_type::RETRY_CANCEL_CONTINUE:
 		{
-			//	Bottom Left Button Position for a single Button
+			//	Bottom left button position for a single button
 			Vec2 position(center - buttonSize / 2);
 			
 			
-			//	Retry Button
+			//	Retry button
 			Button* button_retry = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x - 2 * buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Retry",
 				Fonts::CalibriLight24,
@@ -268,22 +293,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::turquoise,
 				c_pressTime
 			);
+			button_retry->set_function_onCallback(callback);
+			button_retry->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_retry;
 			m_buttons[(uint8) e_button::RETRY] = button_retry;
 			
 			
-			//	Cancel Button
+			//	Cancel button
 			Button* button_cancel = new Button
 			(
 				Element
 				(
 					Rect(position, buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Cancel",
 				Fonts::CalibriLight24,
@@ -293,22 +317,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::yellow,
 				c_pressTime
 			);
+			button_cancel->set_function_onCallback(callback);
+			button_cancel->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_cancel;
 			m_buttons[(uint8) e_button::CANCEL] = button_cancel;
 			
 			
-			//	Continue Button
+			//	Continue button
 			Button* button_continue = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x + 2 * buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Continue",
 				Fonts::CalibriLight24,
@@ -318,6 +341,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::yellow,
 				c_pressTime
 			);
+			button_continue->set_function_onCallback(callback);
+			button_continue->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_continue;
 			m_buttons[(uint8) e_button::CONTINUE] = button_continue;
 		}
@@ -325,22 +350,19 @@ MessageBox::MessageBox(e_type type, const String& message)
 		
 		case e_type::YES_NO:
 		{
-			//	Bottom Left Button Position for a single Button
+			//	Bottom Left button position for a single button
 			Vec2 position(center - buttonSize / 2);
 			
 			
-			//	Yes Button
+			//	Yes button
 			Button* button_yes = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x - buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Yes",
 				Fonts::CalibriLight24,
@@ -350,22 +372,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::green,
 				c_pressTime
 			);
+			button_yes->set_function_onCallback(callback);
+			button_yes->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_yes;
 			m_buttons[(uint8) e_button::YES] = button_yes;
 			
 			
-			//	No Button
+			//	No button
 			Button* button_no = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x + buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"No",
 				Fonts::CalibriLight24,
@@ -375,6 +396,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::red,
 				c_pressTime
 			);
+			button_no->set_function_onCallback(callback);
+			button_no->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_no;
 			m_buttons[(uint8) e_button::NO] = button_no;
 		}
@@ -382,22 +405,19 @@ MessageBox::MessageBox(e_type type, const String& message)
 		
 		case e_type::YES_NO_CANCEL:
 		{
-			//	Bottom Left Button Position for a single Button
+			//	Bottom Left button position for a single button
 			Vec2 position(center - buttonSize / 2);
 			
 			
-			//	Yes Button
+			//	Yes button
 			Button* button_yes = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x - 2 * buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Yes",
 				Fonts::CalibriLight24,
@@ -407,22 +427,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::green,
 				c_pressTime
 			);
+			button_yes->set_function_onCallback(callback);
+			button_yes->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_yes;
 			m_buttons[(uint8) e_button::YES] = button_yes;
 			
 			
-			//	No Button
+			//	No button
 			Button* button_no = new Button
 			(
 				Element
 				(
 					Rect(position, buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"No",
 				Fonts::CalibriLight24,
@@ -432,22 +451,21 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::red,
 				c_pressTime
 			);
+			button_no->set_function_onCallback(callback);
+			button_no->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_no;
 			m_buttons[(uint8) e_button::NO] = button_no;
 			
 			
-			//	Cancel Button
+			//	Cancel button
 			Button* button_cancel = new Button
 			(
 				Element
 				(
 					Rect(Vec2(position.x + 2 * buttonSize.x, position.y), buttonSize),
-					graphics.get_pageActual(),
-					graphics.get_numberOfLayers() - 1,
-					nullptr,
-					callback,
+					m_page,
 					0,
-					Element::e_frameType::ROUNDED
+					nullptr
 				),
 				"Cancel",
 				Fonts::CalibriLight24,
@@ -457,6 +475,8 @@ MessageBox::MessageBox(e_type type, const String& message)
 				Colors::yellow,
 				c_pressTime
 			);
+			button_cancel->set_function_onCallback(callback);
+			button_cancel->set_frameType(Element::e_frameType::ROUNDED);
 			graphics += button_cancel;
 			m_buttons[(uint8) e_button::CANCEL] = button_cancel;
 		}
@@ -468,36 +488,27 @@ MessageBox::MessageBox(e_type type, const String& message)
 		}
 		break;
 	}
-	m_messageBox = this;
 	
 	
-	//	Message Element
+	//	Message element
 	const Vec2 textSize = Vec2(displaySize / 5);
 	const Vec2 textPosition = Vec2(displaySize.x / 2, (2 * displaySize.y) / 3) - textSize / 2;
 	Element* text = new Element
 	(
 		Rect(textPosition, textSize),
-		graphics.get_pageActual(),
-		graphics.get_numberOfLayers() - 1,
-		update,
-		nullptr,
+		m_page,
 		0,
-		Element::e_frameType::NONE
+		update
 	);
 	graphics += text;
 	m_text = text;
 	
 	
-	//	Set Blending to dim other Elements and disable Touch Function of other Layers
-	const uint32 numberOfLayers = graphics.get_numberOfLayers();
-	for(uint32 i = 0; i < numberOfLayers - 1; i++)
-	{
-		graphics.set_layerAlpha(i, 30);
-		graphics.set_layerTouchability(i, false);
-	}
+	//	Save pointer to this MessageBox in static member for update and callback functions
+	m_messageBoxes += this;
 	
 	
-	//	Wait for User to choose
+	//	Wait for user to choose
 	CMOS& cmos = CMOS::get();
 	while(m_userChoice == e_button::NONE)
 	{
@@ -508,7 +519,7 @@ MessageBox::MessageBox(e_type type, const String& message)
 
 MessageBox::~MessageBox()
 {
-	//	Free Memory (Element Destructor will detach itself from Graphics)
+	//	Free memory (Element destructor will detach itself from Graphics)
 	CMOS& cmos = CMOS::get();
 	Graphics& graphics = Graphics::get();
 	for(auto& i: m_buttons)
@@ -534,16 +545,16 @@ MessageBox::~MessageBox()
 	}
 	
 	
-	//	Reset Blending and Touchability
-	const uint32 numberOfLayers = graphics.get_numberOfLayers();
-	for(uint32 i = 0; i < numberOfLayers - 1; i++)
-	{
-		graphics.set_layerAlpha(i, 0xFF);
-		graphics.set_layerTouchability(i, true);
-	}
+	//	Remove page where the MessageBox was shown
+	graphics.remove_page(m_page);
 	
 	
-	m_messageBox = nullptr;
+	//	Go back to the page where the MessageBox was created
+	graphics.set_currentPage(m_pageOnCreation);
+	
+	
+	//	Remove pointer to this MessageBox from static member
+	m_messageBoxes.erase(this);
 }
 
 

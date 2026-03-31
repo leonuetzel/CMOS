@@ -35,17 +35,13 @@ class Button: public Element
 		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
 		f_element m_function_onChangePage;
-		f_element m_function_onChangeLayer;
-		f_element m_function_onChangePosition;
-		f_element m_function_onChangeSize;
+		f_element m_function_onChangeShape;
 		f_element m_function_onChangePageActual;
 		
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
 		static void onChangePage(Element& element);
-		static void onChangeLayer(Element& element);
-		static void onChangePosition(Element& element);
-		static void onChangeSize(Element& element);
+		static void onChangeShape(Element& element);
 		static void onChangePageActual(Element& element);
 		
 		
@@ -69,16 +65,12 @@ class Button: public Element
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
 		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
-		constexpr inline void				set_function_onChangeLayer(f_element onChangeLayerFunction);
-		constexpr inline void				set_function_onChangePosition(f_element onChangePositionFunction);
-		constexpr inline void				set_function_onChangeSize(f_element onChangeSizeFunction);
+		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
 		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
 		constexpr inline f_element	get_function_onChangePage() const;
-		constexpr inline f_element	get_function_onChangeLayer() const;
-		constexpr inline f_element	get_function_onChangePosition() const;
-		constexpr inline f_element	get_function_onChangeSize() const;
+		constexpr inline f_element	get_function_onChangeShape() const;
 		constexpr inline f_element	get_function_onChangePageActual() const;
 		
 		inline String get_text() const;
@@ -146,9 +138,7 @@ inline Button::Button(Element element, String text, const Font& font, Color colo
 		m_function_onUpdate(Element::get_function_onUpdate()),
 		m_function_onCallback(Element::get_function_onCallback()),
 		m_function_onChangePage(Element::get_function_onChangePage()),
-		m_function_onChangeLayer(Element::get_function_onChangeLayer()),
-		m_function_onChangePosition(Element::get_function_onChangePosition()),
-		m_function_onChangeSize(Element::get_function_onChangeSize()),
+		m_function_onChangeShape(Element::get_function_onChangeShape()),
 		m_function_onChangePageActual(Element::get_function_onChangePageActual()),
 		
 		m_font(&font),
@@ -157,9 +147,7 @@ inline Button::Button(Element element, String text, const Font& font, Color colo
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
 	Element::set_function_onChangePage(onChangePage);
-	Element::set_function_onChangeLayer(onChangeLayer);
-	Element::set_function_onChangePosition(onChangePosition);
-	Element::set_function_onChangeSize(onChangeSize);
+	Element::set_function_onChangeShape(onChangeShape);
 	Element::set_function_onChangePageActual(onChangePageActual);
 }
 
@@ -187,21 +175,9 @@ constexpr inline void Button::set_function_onChangePage(f_element onChangePageFu
 }
 
 
-constexpr inline void Button::set_function_onChangeLayer(f_element onChangeLayerFunction)
+constexpr inline void Button::set_function_onChangeShape(f_element onChangeShapeFunction)
 {
-	m_function_onChangeLayer = onChangeLayerFunction;
-}
-
-
-constexpr inline void Button::set_function_onChangePosition(f_element onChangePositionFunction)
-{
-	m_function_onChangePosition = onChangePositionFunction;
-}
-
-
-constexpr inline void Button::set_function_onChangeSize(f_element onChangeSizeFunction)
-{
-	m_function_onChangeSize = onChangeSizeFunction;
+	m_function_onChangeShape = onChangeShapeFunction;
 }
 
 
@@ -229,21 +205,9 @@ constexpr inline Element::f_element Button::get_function_onChangePage() const
 }
 
 
-constexpr inline Element::f_element Button::get_function_onChangeLayer() const
+constexpr inline Element::f_element Button::get_function_onChangeShape() const
 {
-	return(m_function_onChangeLayer);
-}
-
-
-constexpr inline Element::f_element Button::get_function_onChangePosition() const
-{
-	return(m_function_onChangePosition);
-}
-
-
-constexpr inline Element::f_element Button::get_function_onChangeSize() const
-{
-	return(m_function_onChangeSize);
+	return(m_function_onChangeShape);
 }
 
 
@@ -311,7 +275,7 @@ inline void Button::set_text(String text)
 	if(text != m_textNew.text)
 	{
 		m_textNew.text = text;
-		m_updateRequested = true;
+		requestUpdate();
 	}
 }
 
@@ -322,7 +286,7 @@ constexpr inline void Button::set_font(const Font& font)
 	if(m_textNew.font != &font)
 	{
 		m_textNew.font = &font;
-		m_updateRequested = true;
+		requestUpdate();
 	}
 }
 
@@ -333,7 +297,7 @@ constexpr inline void Button::set_colorText(Color color)
 	if(m_textNew.color != color)
 	{
 		m_textNew.color = color;
-		m_updateRequested = true;
+		requestUpdate();
 	}
 }
 
@@ -343,7 +307,7 @@ constexpr inline void Button::set_colorBackground(Color color)
 	if(m_colorBackground != color)
 	{
 		m_colorBackground = color;
-		m_rebuildRequested = true;
+		requestRebuild();
 	}
 }
 
@@ -353,7 +317,7 @@ constexpr inline void Button::set_colorFrame(Color color)
 	if(m_colorFrame != color)
 	{
 		m_colorFrame = color;
-		m_rebuildRequested = true;
+		requestRebuild();
 	}
 }
 

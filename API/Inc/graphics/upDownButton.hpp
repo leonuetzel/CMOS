@@ -118,11 +118,8 @@ inline UpDownButton::UpDownButton(Element element, const Font& font, Color color
 					element.get_size().x
 				),
 				element.get_page(),
-				element.get_layer(),
-				onUpdate,
-				onCallback_buttonIncrement,
-				element.get_updateRate_ms(),
-				Element::e_frameType::ROUND
+				element.get_updatePeriodInFrames(),
+				onUpdate
 			),
 			"+",
 			font,
@@ -144,11 +141,8 @@ inline UpDownButton::UpDownButton(Element element, const Font& font, Color color
 					element.get_size().x
 				),
 				element.get_page(),
-				element.get_layer(),
-				onUpdate,
-				onCallback_buttonDecrement,
-				element.get_updateRate_ms(),
-				Element::e_frameType::ROUND
+				element.get_updatePeriodInFrames(),
+				onUpdate
 			),
 			"-",
 			font,
@@ -168,11 +162,8 @@ inline UpDownButton::UpDownButton(Element element, const Font& font, Color color
 				element.get_size().x
 			),
 			element.get_page(),
-			element.get_layer(),
-			onUpdate,
-			nullptr,
 			0,
-			Element::e_frameType::ROUND
+			onUpdate
 		),
 		m_elementValue
 		(
@@ -184,11 +175,8 @@ inline UpDownButton::UpDownButton(Element element, const Font& font, Color color
 				element.get_size().x
 			),
 			element.get_page(),
-			element.get_layer(),
-			onUpdate,
-			nullptr,
 			0,
-			Element::e_frameType::ROUND
+			onUpdate
 		),
 		
 		m_variableName(variableName),
@@ -199,6 +187,10 @@ inline UpDownButton::UpDownButton(Element element, const Font& font, Color color
 		m_stepSize(stepSize),
 		m_colorText(colorText)
 {
+	m_buttonIncrement.set_function_onCallback(onCallback_buttonIncrement);
+	m_buttonDecrement.set_function_onCallback(onCallback_buttonDecrement);
+	
+	
 	Pair<UpDownButton*, Array<Element*>> upDownButton;
 	upDownButton.first() = this;
 	upDownButton.second() += &m_buttonIncrement;

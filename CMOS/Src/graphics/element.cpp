@@ -8,7 +8,6 @@
 /*                    Globals and Static Initialization					 						 */
 /*****************************************************************************/
 
-RectGraphic* 						Element::m_backBuffer;
 I_GraphicAccelerator* 	Element::m_graphicAccelerator;
 Graphics::e_touchEvent	Element::m_touchEvent;
 
@@ -26,26 +25,29 @@ CODE_RAM void Element::onUpdate()
 	}
 	
 	
-	//	Lock Semaphore of this Element to prevent Data Altering by Callback Function
+	//	Lock semaphore of this element to prevent data altering by callback function
 	CMOS& cmos = CMOS::get();
 	if(cmos.semaphore_lock(this) != OK)
 	{
 		return;
 	}
+	
+	
 	m_function_onUpdate(*this);
 	
+	
+	//	Clear rebuild request flag
 	m_rebuildRequested = false;
-	m_updateRequested = false;
 	
 	
-	//	Unlock Semaphore
+	//	Unlock semaphore
 	cmos.semaphore_unlock(this);
 }
 
 
 CODE_RAM void Element::onCallback()
 {
-	//	Lock Semaphore of this Element to prevent Data Altering by Update Function
+	//	Lock semaphore of this element to prevent data altering by update function
 	CMOS& cmos = CMOS::get();
 	if(cmos.semaphore_lock(this) != OK)
 	{
@@ -53,14 +55,14 @@ CODE_RAM void Element::onCallback()
 	}
 	
 	
-	//	Do Callback Stuff
+	//	Do callback stuff
 	if(m_function_onCallback != nullptr)
 	{
 		m_function_onCallback(*this);
 	}
 	
 	
-	//	Unlock Semaphore
+	//	Unlock semaphore
 	cmos.semaphore_unlock(this);
 }
 
@@ -90,11 +92,65 @@ CODE_RAM feedback Element::draw_rectangleFilledManual(Rect rectangle, Color colo
 	{
 		for(int32 x = 0; x < rectangle.size.x; x++)
 		{
-			Vec2 pixel(rectangle.position.x + x, rectangle.position.y + y);
+			const Vec2 pixel(rectangle.position.x + x, rectangle.position.y + y);
 			set_pixel(pixel, color);
 		}
 	}
+	return(OK);
+}
+
+
+CODE_RAM void Element::syncFramebuffers()
+{
+	//	Clone backbuffer if necessary
+	if(m_areBothFramebuffersIdentical == false)
+	{
+		const RectGraphic backBuffer(m_backBufferShape, m_backBufferData[m_backbufferIndex]);
+		const RectGraphic frontBuffer(m_backBufferShape, m_backBufferData[1 - m_backbufferIndex]);
+		
+		
+		//	Lock semaphore for this element to prevent data altering by update and callback function
+		CMOS& cmos = CMOS::get();
+		if(cmos.semaphore_lock(this) != OK)
+		{
+			return;
+		}
+		
+		
+		//	Copy the element's visible buffer to the backbuffer
+		m_graphicAccelerator->copyForegroundRectangleToOutputPosition(backBuffer, frontBuffer, *this, position);
+		
+		
+		//	Unlock semaphore
+		cmos.semaphore_unlock(this);
+		
+		
+		//	Reset flag
+		m_areBothFramebuffersIdentical = true;
+	}
+}
+
+
+CODE_RAM feedback Element::clearFromBothFramebuffers()
+{
+	//	Lock semaphore for this element to prevent data altering by update and callback function
+	CMOS& cmos = CMOS::get();
+	if(cmos.semaphore_isOwnedByRunningThread(this) != true)
+	{
+		return(FAIL);
+	}
 	
+	
+	//	Clear the element's area on both framebuffers
+	for(auto& i: m_backBufferData)
+	{
+		const RectGraphic backbuffer(m_backBufferShape, i);
+		m_graphicAccelerator->drawfilledRectangleWithSingleColor(backbuffer, Colors::transparent, *this);
+	}
+	
+	
+	//	Unlock semaphore
+	cmos.semaphore_unlock(this);
 	return(OK);
 }
 
@@ -297,6 +353,38 @@ CODE_RAM bool Element::containsPoint(Vec2 point)
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
+CODE_RAM Element::Element(Rect shape, uint8 page, uint32 updatePeriodInFrames, f_element onUpdateFunction)
+	:	Rectangle(shape),
+		m_page(page),
+		m_updatePeriodInFrames(updatePeriodInFrames),
+		m_function_onUpdate(onUpdateFunction),
+		
+		m_visible(true),
+		m_touchable(true),
+		m_function_onCallback(nullptr),
+		m_function_onChangePage(nullptr),
+		m_function_onChangeShape(nullptr),
+		m_function_onChangePageActual(nullptr),
+		
+		m_backBufferShape(Graphics::get().m_frameBufferShape),
+		m_backBufferData(),
+		m_backbufferIndex(Graphics::get().m_frameBufferIndex),
+		
+		m_frameCounterAtLastUpdate(0),
+		m_areBothFramebuffersIdentical(true),
+		
+		m_frameType(e_frameType::NONE),
+		m_touchPosition(Vec2(0, 0)),
+		m_touchValid(false)
+{
+	Graphics& graphics = Graphics::get();
+	for(uint32 i = 0; i < 2; i++)
+	{
+		m_backBufferData[i] = graphics.m_frameBufferData[i];
+	}
+}
+
+
 CODE_RAM Element::~Element()
 {
 	Graphics::get() -= this;
@@ -316,14 +404,15 @@ CODE_RAM feedback Element::set_page(uint32 newPage)
 		return(FAIL);
 	}
 	
-	for(uint32 i = 0; i < graphics.m_elements.get_size(); i++)
+	
+	//	Check overlap with other elements on the new page
+	for(auto& i: graphics.m_elements)
 	{
-		Element& element = *graphics.m_elements[i];
-		if(&element != this)
+		if(i != this)
 		{
-			if(element.m_layer == m_layer && element.m_page == newPage)
+			if(i->m_page == newPage)
 			{
-				if(doesOverlap(element) == true)
+				if(doesOverlap(*i) == true)
 				{
 					return(FAIL);
 				}
@@ -340,82 +429,15 @@ CODE_RAM feedback Element::set_page(uint32 newPage)
 	}
 	
 	
-	if(m_page == graphics.get_pageActual())
-	{
-		//	Clear old Data in Backbuffer and transfer to Frontbuffer to make Changes visible
-		clear();
-		graphics.transferLayerToFrontbuffer(m_layer);
-	}
-	
-	
-	//	Set new Page and rebuild Element if new Page is actual Page
+	//	Set new Page and call "onChangePage" function
 	m_page = newPage;
-	if(m_page == graphics.get_pageActual())
-	{
-		m_rebuildRequested = true;
-		m_updateRequested = true;
-	}
 	if(m_function_onChangePage != nullptr)
 	{
 		m_function_onChangePage(*this);
 	}
 	
 	
-	//	Unlock Semaphore
-	return(cmos.semaphore_unlock(this));
-}
-
-
-CODE_RAM feedback Element::set_layer(uint32 newLayer)
-{
-	Graphics& graphics = Graphics::get();
-	if(newLayer >= graphics.get_numberOfLayers())
-	{
-		return(FAIL);
-	}
-	
-	for(uint32 i = 0; i < graphics.m_elements.get_size(); i++)
-	{
-		Element& element = *graphics.m_elements[i];
-		if(&element != this)
-		{
-			if(element.m_page == m_page && element.m_layer == newLayer)
-			{
-				if(doesOverlap(element) == true)
-				{
-					return(FAIL);
-				}
-			}
-		}
-	}
-	
-	
-	//	Lock Semaphore for this Element
-	CMOS& cmos = CMOS::get();
-	if(cmos.semaphore_lock(this) != OK)
-	{
-		return(FAIL);
-	}
-	
-	
-	if(m_page == graphics.get_pageActual())
-	{
-		//	Clear old Data in Backbuffer
-		clear();
-		
-		
-		//	Set new Layer and rebuild Element
-		m_layer = newLayer;
-		m_rebuildRequested = true;
-		m_updateRequested = true;
-	}
-	if(m_function_onChangeLayer != nullptr)
-	{
-		m_function_onChangeLayer(*this);
-	}
-	
-	
-	//	Unlock Semaphore
+	//	Unlock semaphore
 	return(cmos.semaphore_unlock(this));
 }
 
@@ -424,29 +446,28 @@ CODE_RAM feedback Element::set_position(Vec2 newPosition)
 {
 	Graphics& graphics = Graphics::get();
 	
-	//	Check Display Borders
+	//	Check display borders
 	if(newPosition.x < 0 || newPosition.y < 0)
 	{
 		return(FAIL);
 	}
 	
-	Rect newRect(newPosition, size);
-	Vec2 topRight(newRect.get_topRightCorner());
-	if(topRight.x > m_backBuffer[m_layer].size.x || topRight.y > m_backBuffer[m_layer].size.y)
+	const Rect newRect(newPosition, size);
+	const Vec2 topRight(newRect.get_topRightCorner());
+	if(topRight.x > m_backBufferShape.size.x || topRight.y > m_backBufferShape.size.y)
 	{
 		return(FAIL);
 	}
 	
 	
-	//	Check overlap with other Elements
-	for(uint32 i = 0; i < graphics.m_elements.get_size(); i++)
+	//	Check overlap with other elements
+	for(auto& i: graphics.m_elements)
 	{
-		Element& element = *graphics.m_elements[i];
-		if(&element != this)
+		if(i != this)
 		{
-			if(element.m_layer == m_layer && element.m_page == m_page)
+			if(i->m_page == m_page)
 			{
-				if(newRect.doesOverlap(element) == true)
+				if(newRect.doesOverlap(*i) == true)
 				{
 					return(FAIL);
 				}
@@ -455,7 +476,7 @@ CODE_RAM feedback Element::set_position(Vec2 newPosition)
 	}
 	
 	
-	//	Lock Semaphore for this Element
+	//	Lock semaphore for this element
 	CMOS& cmos = CMOS::get();
 	if(cmos.semaphore_lock(this) != OK)
 	{
@@ -463,21 +484,14 @@ CODE_RAM feedback Element::set_position(Vec2 newPosition)
 	}
 	
 	
-	//	Make Changes visible only if Element is on currently shown Page
-	if(m_page == graphics.get_pageActual())
+	//	Set new position and call "onChangeShape" function
+	if(m_page == graphics.get_currentPage())
 	{
-		//	Clear old Data in Backbuffer
-		clear();
-		
-		
-		//	Set new Position and rebuild Element
 		position = newPosition;
-		m_rebuildRequested = true;
-		m_updateRequested = true;
 	}
-	if(m_function_onChangePosition != nullptr)
+	if(m_function_onChangeShape != nullptr)
 	{
-		m_function_onChangePosition(*this);
+		m_function_onChangeShape(*this);
 	}
 	
 	
@@ -490,31 +504,30 @@ CODE_RAM feedback Element::set_size(Vec2 newSize)
 {
 	Graphics& graphics = Graphics::get();
 	
-	//	Check Display Borders
-	Rect newRect(position, newSize);
-	Vec2 topRight(newRect.get_topRightCorner());
-	if(topRight.x > m_backBuffer[m_layer].size.x || topRight.y > m_backBuffer[m_layer].size.y)
+	//	Check display borders
+	const Rect newRect(position, newSize);
+	const Vec2 topRight(newRect.get_topRightCorner());
+	if(topRight.x > m_backBufferShape.size.x || topRight.y > m_backBufferShape.size.y)
 	{
 		return(FAIL);
 	}
 	
 	
-	//	Check Minimum Dimensions
+	//	Check minimum dimensions
 	if(newSize.x < c_minimumSideLength || newSize.y < c_minimumSideLength)
 	{
 		return(FAIL);
 	}
 	
 	
-	//	Check overlap with other Elements
-	for(uint32 i = 0; i < graphics.m_elements.get_size(); i++)
+	//	Check overlap with other elements
+	for(auto& i: graphics.m_elements)
 	{
-		Element& element = *graphics.m_elements[i];
-		if(&element != this)
+		if(i != this)
 		{
-			if(element.m_layer == m_layer && element.m_page == m_page)
+			if(i->m_page == m_page)
 			{
-				if(newRect.doesOverlap(element) == true)
+				if(newRect.doesOverlap(*i) == true)
 				{
 					return(FAIL);
 				}
@@ -523,7 +536,7 @@ CODE_RAM feedback Element::set_size(Vec2 newSize)
 	}
 	
 	
-	//	Lock Semaphore for this Element
+	//	Lock semaphore for this element
 	CMOS& cmos = CMOS::get();
 	if(cmos.semaphore_lock(this) != OK)
 	{
@@ -531,25 +544,18 @@ CODE_RAM feedback Element::set_size(Vec2 newSize)
 	}
 	
 	
-	//	Make Changes visible only if Element is on currently shown Page
-	if(m_page == graphics.get_pageActual())
+	//	Set new size and call "onChangeShape" function
+	if(m_page == graphics.get_currentPage())
 	{
-		//	Clear old Data in Backbuffer
-		clear();
-		
-		
-		//	Set new Size and rebuild Element
 		size = newSize;
-		m_rebuildRequested = true;
-		m_updateRequested = true;
 	}
-	if(m_function_onChangeSize != nullptr)
+	if(m_function_onChangeShape != nullptr)
 	{
-		m_function_onChangeSize(*this);
+		m_function_onChangeShape(*this);
 	}
 	
 	
-	//	Unlock Semaphore
+	//	Unlock semaphore
 	return(cmos.semaphore_unlock(this));
 }
 
@@ -640,7 +646,7 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 {
 	if(multiLine == false)
 	{
-		//	We need to read the Advance Width of every Character in the String
+		//	We need to read the advance width of every character in the string
 		Vec2 stringBox(0, font.get_height());
 		for(auto& i: string)
 		{
@@ -650,9 +656,9 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 	}
 	
 	
-	//	Multi Line Support
-	//	We need to read the Advance Width of every Character in the String until the Element Size is reached
-	//	So we now calculate the Line Width for every Line
+	//	Multi line support
+	//	We need to read the advance width of every character in the string until the element size is reached
+	//	So we now calculate the line width for every line
 	Array<int16> lineWidth(0);
 	for(auto& i: string)
 	{
@@ -664,24 +670,24 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 			const int16 lineWidthNew = lineWidthActual + characterWidth;
 			
 			
-			//	Check if the new Line Width is too long
+			//	Check if the new line width is too long
 			if(lineWidthNew > size.x - 2 * distanceFromBorder)
 			{
-				//	New Line Width is too long
-				//	Save the old Line Width and start a new Line
+				//	New line width is too long
+				//	Save the old line width and start a new line
 				lineWidth += characterWidth;
 			}
 			else
 			{
-				//	New Line Width fits into the Element
-				//	Save the new Line Width
+				//	New line width fits into the element
+				//	Save the new line width
 				lineWidthActual = lineWidthNew;
 			}
 		}
 	}
 	
-	//	Now we have the Line Width for every Line
-	//	The String Box is the maximum Line Width and the number of Lines times the Font Height
+	//	Now we have the line width for every line
+	//	The string box is the maximum line width and the number of lines times the font height
 	Vec2 stringBox(0, lineWidth.get_size() * font.get_height());
 	for(uint32 i = 0; i < lineWidth.get_size(); i++)
 	{
@@ -701,23 +707,33 @@ Vec2 Element::get_stringBox(const String& string, const Font& font, bool multiLi
 
 CODE_RAM feedback Element::set_pixel(Vec2 pixelPosition, Color color)
 {
-	static Graphics& graphics = Graphics::get();
-	if(m_backBuffer[m_layer].data == nullptr || m_page != graphics.get_pageActual())
+	//	Check if backbuffer is available
+	if(m_backBufferData[m_backbufferIndex] == nullptr)
 	{
 		return(FAIL);
 	}
 	
-	Vec2 positionAbsolute(position + pixelPosition);
 	
+	//	Dont set pixel if the element is not on the current page
+	static Graphics& graphics = Graphics::get();
+	if(m_page != graphics.get_currentPage())
+	{
+		return(FAIL);
+	}
+	
+	
+	//	Check if pixel is inside the element
+	const Vec2 positionAbsolute(position + pixelPosition);
 	if(containsPoint(positionAbsolute) == false)
 	{
 		return(FAIL);
 	}
 	
-	RectGraphic& buffer = m_backBuffer[m_layer];
-	Color* pixel = buffer.data + ((buffer.size.y - positionAbsolute.y - 1) * buffer.size.x + positionAbsolute.x);
-	*pixel = color;
 	
+	//	Choose the correct backbuffer
+	Color* const pixel = m_backBufferData[m_backbufferIndex] + ((m_backBufferShape.size.y - positionAbsolute.y - 1) * m_backBufferShape.size.x + positionAbsolute.x);
+	*pixel = color;
+	m_areBothFramebuffersIdentical = false;
 	return(OK);
 }
 
@@ -727,10 +743,13 @@ CODE_RAM void Element::draw_frame(Color color)
 	switch(m_frameType)
 	{
 		case e_frameType::RECTANGLE:
+		{
 			draw_rectangle(Rectangle(0, 0, size.x, size.y), color);
-			break;
+		}
+		break;
 			
 		case e_frameType::ROUND:
+		{
 			if(size.x == size.y)
 			{
 				draw_circle(size / 2, size.x / 2 - 1, color);
@@ -763,9 +782,11 @@ CODE_RAM void Element::draw_frame(Color color)
 				draw_circle(center_1, x_div2 - 1, color, 180,	181);
 				draw_circle(center_2, x_div2 - 1, color, 0,		181);
 			}
-			break;
+		}
+		break;
 			
 		case e_frameType::ROUNDED:
+		{
 			for(uint32 i = c_frameRoundness; (int16) i < size.x - 1 - c_frameRoundness; i++)
 			{
 				set_pixel(Vec2(i, 0), color);
@@ -780,13 +801,19 @@ CODE_RAM void Element::draw_frame(Color color)
 			draw_circle(Vec2(c_frameRoundness,								size.y - 1 - c_frameRoundness), c_frameRoundness, color, 90, 	91);
 			draw_circle(Vec2(c_frameRoundness,								c_frameRoundness),							c_frameRoundness, color, 180, 91);
 			draw_circle(Vec2(size.x - 1 - c_frameRoundness,	c_frameRoundness),							c_frameRoundness, color, 270, 91);
-			break;
+		}break;
 			
 		case e_frameType::NONE:
-			break;
+		{
+			
+		}
+		break;
 			
 		default:
-			break;
+		{
+			
+		}
+		break;
 	}
 }
 
@@ -885,7 +912,7 @@ CODE_RAM void Element::draw_background(Color color)
 
 CODE_RAM feedback Element::draw_char(const Font::s_glyphDescription& glyphDescription, Vec2 bottomLeftPosition, Color color)
 {
-	//	Check for valid Data
+	//	Check for valid data
 	const uint8* fontData = glyphDescription.data;
 	if(fontData == nullptr)
 	{
@@ -893,36 +920,36 @@ CODE_RAM feedback Element::draw_char(const Font::s_glyphDescription& glyphDescri
 	}
 	
 	
-	//	Adjust the Bottom Left Position according to the Glyph Description
+	//	Adjust the bottom Left position according to the glyph description
 	bottomLeftPosition += glyphDescription.box.position;
 	
 	
-	//	Data are one Bit per Pixel
-	//	The first Pixel is in the top-left Corner
-	//	Bit Order is from left to right with Bit 7 being the left-most Pixel
-	//	The Data is a real Bit-Stream, not necessarily being aligned to the Box Boundaries
+	//	Data are one bit per pixel
+	//	The first pixel is in the top-left corner
+	//	Bit order is from left to right with bit 7 being the left-most pixel
+	//	The data is a real bitstream, not necessarily being aligned to the box boundaries
 	const uint32 numberOfPixels = glyphDescription.box.size.x * glyphDescription.box.size.y;
 	uint32 pixelCounter = 0;
 	Vec2 pixelPosition(0, glyphDescription.box.size.y - 1);
 	while(pixelCounter < numberOfPixels)
 	{
-		//	Calculate the next Bit
+		//	Calculate the next bit
 		const uint32 byteCounter = pixelCounter / 8;
 		const uint32 bitCounter = 7 - (pixelCounter % 8);
 		
 		
-		//	Get Pixel Data
+		//	Get pixel data
 		const bool bit = bit::isSet(fontData[byteCounter], bitCounter);
 		
 		
-		//	Draw Pixel
+		//	Draw pixel
 		if(bit == true)
 		{
 			set_pixel(bottomLeftPosition + pixelPosition, color);
 		}
 		
 		
-		//	Update Pixel Position
+		//	Update pixel position
 		pixelPosition.x++;
 		if(pixelPosition.x >= glyphDescription.box.size.x)
 		{
@@ -1465,14 +1492,14 @@ CODE_RAM feedback Element::draw_rectangle(Rectangle rectangle, Color color)
 CODE_RAM feedback Element::draw_rectangleFilled(Rectangle rectangle, Color color)
 {
 	Graphics& graphics = Graphics::get();
-	if(rectangle.size.x <= 0 || rectangle.size.y <= 0 || m_page != graphics.get_pageActual())
+	if(rectangle.size.x <= 0 || rectangle.size.y <= 0 || m_page != graphics.get_currentPage())
 	{
 		return(FAIL);
 	}
 	
 	
-	//	Check if Rectangle can be drawn by using the Graphic DMA - if not, use the manual Drawing Function
-	//	It can be drawn if the Rectangle is completely inside the Element (not crossing the Frame - depends on Frame Type)
+	//	Check if rectangle can be drawn by using the graphic accelerator - if not, use the manual drawing function
+	//	It can be drawn if the rectangle is completely inside the element (not crossing the frame - depends on frame type)
 	Vec2 bottomLeft(position + rectangle.position);
 	Vec2 bottomRight(position + rectangle.position);
 	Vec2 topLeft(position + rectangle.position);
@@ -1487,18 +1514,16 @@ CODE_RAM feedback Element::draw_rectangleFilled(Rectangle rectangle, Color color
 	}
 	
 	
-	rectangle.position += position + m_backBuffer[m_layer].position;
-	m_graphicAccelerator->draw_rectangleFull(m_backBuffer[m_layer], color, rectangle);
-	while(m_graphicAccelerator->is_available() == false)
-	{
-		#if defined(CORTEX_M7)
-			CMOS::get().sleep_100us(1);
-		#endif
-		
-		#if defined(CORTEX_M0) || defined(CORTEX_M0P) || defined(CORTEX_M3) || defined(CORTEX_M4)
-			CMOS::get().sleep_ms(1);
-		#endif
-	}
+	//	Choose the correct backbuffer and draw the rectangle by using the graphic accelerator
+	rectangle.position += position + m_backBufferShape.position;
+	const RectGraphic backbufferActive(m_backBufferShape, m_backBufferData[m_backbufferIndex]);
+	m_graphicAccelerator->drawfilledRectangleWithSingleColor(backbufferActive, color, rectangle);
+	
+	
+	//	Since the graphic accelerator has drawn directly into the backbuffer, we can set the flag that both framebuffers are not identical
+	m_areBothFramebuffersIdentical = false;
+	
+	
 	return(OK);
 }
 

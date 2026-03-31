@@ -70,16 +70,14 @@ class Textbox: public Element
 		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
 		f_element m_function_onChangePage;
-		f_element m_function_onChangeLayer;
-		f_element m_function_onChangePosition;
-		f_element m_function_onChangeSize;
+		f_element m_function_onChangeShape;
+		f_element m_function_onChangePageActual;
 		
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
 		static void onChangePage(Element& element);
-		static void onChangeLayer(Element& element);
-		static void onChangePosition(Element& element);
-		static void onChangeSize(Element& element);
+		static void onChangeShape(Element& element);
+		static void onChangePageActual(Element& element);
 		
 		constexpr inline bool isLineInScrollingWindow(uint32 lineNumber) const;
 		
@@ -111,15 +109,13 @@ class Textbox: public Element
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
 		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
-		constexpr inline void				set_function_onChangeLayer(f_element onChangeLayerFunction);
-		constexpr inline void				set_function_onChangePosition(f_element onChangePositionFunction);
-		constexpr inline void				set_function_onChangeSize(f_element onChangeSizeFunction);
+		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
+		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
 		constexpr inline f_element	get_function_onChangePage() const;
-		constexpr inline f_element	get_function_onChangeLayer() const;
-		constexpr inline f_element	get_function_onChangePosition() const;
-		constexpr inline f_element	get_function_onChangeSize() const;
+		constexpr inline f_element	get_function_onChangeShape() const;
+		constexpr inline f_element	get_function_onChangePageActual() const;
 		
 		constexpr inline uint32 get_lineTouched() const;
 		constexpr inline const Font& get_font() const;
@@ -253,21 +249,9 @@ constexpr inline void Textbox::set_function_onChangePage(f_element onChangePageF
 }
 
 
-constexpr inline void Textbox::set_function_onChangeLayer(f_element onChangeLayerFunction)
+constexpr inline void Textbox::set_function_onChangeShape(f_element onChangeShapeFunction)
 {
-	m_function_onChangeLayer = onChangeLayerFunction;
-}
-
-
-constexpr inline void Textbox::set_function_onChangePosition(f_element onChangePositionFunction)
-{
-	m_function_onChangePosition = onChangePositionFunction;
-}
-
-
-constexpr inline void Textbox::set_function_onChangeSize(f_element onChangeSizeFunction)
-{
-	m_function_onChangeSize = onChangeSizeFunction;
+	m_function_onChangeShape = onChangeShapeFunction;
 }
 
 
@@ -289,21 +273,9 @@ constexpr inline Element::f_element Textbox::get_function_onChangePage() const
 }
 
 
-constexpr inline Element::f_element Textbox::get_function_onChangeLayer() const
+constexpr inline Element::f_element Textbox::get_function_onChangeShape() const
 {
-	return(m_function_onChangeLayer);
-}
-
-
-constexpr inline Element::f_element Textbox::get_function_onChangePosition() const
-{
-	return(m_function_onChangePosition);
-}
-
-
-constexpr inline Element::f_element Textbox::get_function_onChangeSize() const
-{
-	return(m_function_onChangeSize);
+	return(m_function_onChangeShape);
 }
 
 
@@ -388,7 +360,7 @@ inline feedback Textbox::set_text(const String& text, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -407,7 +379,7 @@ inline feedback Textbox::set_lineTouchability(bool touchable)
 		}
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -427,7 +399,7 @@ inline feedback Textbox::set_lineTouchability(bool touchable, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -442,7 +414,7 @@ inline feedback Textbox::set_colorText(Color color)
 		i.colorText = color;
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -458,7 +430,7 @@ inline feedback Textbox::set_colorText(Color color, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -473,7 +445,7 @@ inline feedback Textbox::set_colorTextTouched(Color color)
 		i.colorTextTouched = color;
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -489,7 +461,7 @@ inline feedback Textbox::set_colorTextTouched(Color color, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -504,7 +476,7 @@ inline feedback Textbox::set_colorLine(Color color)
 		i.colorLine = color;
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -520,7 +492,7 @@ inline feedback Textbox::set_colorLine(Color color, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -535,7 +507,7 @@ inline feedback Textbox::set_colorLineTouched(Color color)
 		i.colorLineTouched = color;
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -551,7 +523,7 @@ inline feedback Textbox::set_colorLineTouched(Color color, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -566,7 +538,7 @@ inline feedback Textbox::set_xOffset(int16 xOffset)
 		i.xOffset = xOffset;
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 	return(OK);
 }
 
@@ -582,7 +554,7 @@ inline feedback Textbox::set_xOffset(int16 xOffset, uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}
@@ -600,7 +572,7 @@ inline void Textbox::reset_touchFlags()
 			i.redrawNecessary = true;
 		}
 	}
-	m_updateRequested = true;
+	requestUpdate();
 }
 
 
@@ -646,7 +618,7 @@ constexpr inline void Textbox::clear()
 		i.text.erase();
 		i.redrawNecessary = true;
 	}
-	m_updateRequested = true;
+	requestUpdate();
 }
 
 
@@ -661,7 +633,7 @@ constexpr inline feedback Textbox::clear(uint32 lineNumber)
 		//	Update Textbox only if the Line is visible to the User
 		if(isLineInScrollingWindow(lineNumber) == true)
 		{
-			m_updateRequested = true;
+			requestUpdate();
 		}
 		return(OK);
 	}

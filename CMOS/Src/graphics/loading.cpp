@@ -29,49 +29,45 @@ CODE_RAM void Loading::onUpdate(Element& element)
 	
 	
 	//	Full Rebuild
-	if(loading.m_rebuildRequested == true)
+	if(loading.isRebuildRequested() == true)
 	{
 		loading.draw_background(loading.m_colorBackground);
 		loading.draw_frame(loading.m_colorFrame);
 	}
 	
 	
-	//	Normal Update
-	if(loading.m_updateRequested == true)
+	Vec2 center = loading.get_size() / 2;
+	
+	for(uint32 i = 0; i < loading.m_numberOfCircles; i++)
 	{
-		Vec2 center = loading.get_size() / 2;
-		
-		for(uint32 i = 0; i < loading.m_numberOfCircles; i++)
+		Vec2 position;
+		position.x = center.x - loading.m_bigCircleRadius * cos(loading.m_index + i * loading.m_angleRad);
+		position.y = center.y + loading.m_bigCircleRadius * sin(loading.m_index + i * loading.m_angleRad);
+		loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorBackground);
+	}
+	
+	loading.m_index += c_stepWidth;
+	
+	for(uint32 i = 0; i < loading.m_numberOfCircles; i++)
+	{
+		Vec2 position;
+		position.x = center.x - loading.m_bigCircleRadius * cos(loading.m_index + i * loading.m_angleRad);
+		position.y = center.y + loading.m_bigCircleRadius * sin(loading.m_index + i * loading.m_angleRad);
+		if(loading.m_colorFunction == nullptr)
 		{
-			Vec2 position;
-			position.x = center.x - loading.m_bigCircleRadius * cos(loading.m_index + i * loading.m_angleRad);
-			position.y = center.y + loading.m_bigCircleRadius * sin(loading.m_index + i * loading.m_angleRad);
-			loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorBackground);
+			loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorCircles);
 		}
-		
-		loading.m_index += c_stepWidth;
-		
-		for(uint32 i = 0; i < loading.m_numberOfCircles; i++)
+		else
 		{
-			Vec2 position;
-			position.x = center.x - loading.m_bigCircleRadius * cos(loading.m_index + i * loading.m_angleRad);
-			position.y = center.y + loading.m_bigCircleRadius * sin(loading.m_index + i * loading.m_angleRad);
-			if(loading.m_colorFunction == nullptr)
-			{
-				loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorCircles);
-			}
-			else
-			{
-				loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorFunction);
-			}
+			loading.draw_circleFilled(position, loading.m_circleRadius, loading.m_colorFunction);
 		}
-		
-		if(loading.m_progress != nullptr)
-		{
-			loading.draw_string(String(loading.m_progress_old) + "%", Element::e_align::CENTER, loading.m_font, Colors::transparent);
-			loading.m_progress_old = (*loading.m_progress);
-			loading.draw_string(String(loading.m_progress_old) + "%", e_align::CENTER, loading.m_font, loading.m_colorText);
-		}
+	}
+	
+	if(loading.m_progress != nullptr)
+	{
+		loading.draw_string(String(loading.m_progress_old) + "%", Element::e_align::CENTER, loading.m_font, Colors::transparent);
+		loading.m_progress_old = (*loading.m_progress);
+		loading.draw_string(String(loading.m_progress_old) + "%", e_align::CENTER, loading.m_font, loading.m_colorText);
 	}
 }
 
@@ -83,7 +79,7 @@ CODE_RAM void Loading::onCallback(Element& element)
 	if(loading.m_function_onCallback != nullptr)
 	{
 		loading.m_function_onCallback(element);
-		loading.m_updateRequested = true;;
+		loading.requestUpdate();
 	}
 }
 
@@ -94,19 +90,7 @@ CODE_RAM void Loading::onChangePage(Element& element)
 }
 
 
-CODE_RAM void Loading::onChangeLayer(Element& element)
-{
-	
-}
-
-
-CODE_RAM void Loading::onChangePosition(Element& element)
-{
-	
-}
-
-
-CODE_RAM void Loading::onChangeSize(Element& element)
+CODE_RAM void Loading::onChangeShape(Element& element)
 {
 	
 }

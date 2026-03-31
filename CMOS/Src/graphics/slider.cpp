@@ -21,49 +21,45 @@ CODE_RAM void Slider::onUpdate(Element& element)
 	Slider& slider = (Slider&) element;
 	
 	
-	//	Execute User Update first to be able to display Changes after
+	//	Execute user update first to be able to display changes after
 	if(slider.m_function_onUpdate != nullptr)
 	{
 		slider.m_function_onUpdate(slider);
 	}
 	
 	
-	//	Full Rebuild
-	if(slider.m_rebuildRequested == true)
+	//	Full rebuild
+	if(slider.isRebuildRequested() == true)
 	{
 		slider.draw_background(slider.m_colorBackground);
 		slider.draw_frame(slider.m_colorFrame);
 	}
 	
 	
-	//	Normal Update
-	if(slider.m_updateRequested == true)
+	//	Take temporary variables to avoid multiple accesses
+	const uint8 percentActualShown = slider.m_percentActualShown;
+	const uint8 percentNew = slider.m_percentNewFromCallback;
+	
+	if(percentActualShown != percentNew || slider.isRebuildRequested() == true)
 	{
-		//	Take temporary Variables to avoid multiple Accesses
-		const uint8 percentActualShown = slider.m_percentActualShown;
-		const uint8 percentNew = slider.m_percentNewFromCallback;
+		//	Delete old circle
+		slider.draw_circleFilled(slider.get_center(percentActualShown), c_radius, slider.m_colorBackground);
 		
-		if(percentActualShown != percentNew || slider.m_rebuildRequested == true)
-		{
-			//	Delete old Circle
-			slider.draw_circleFilled(slider.get_center(percentActualShown), c_radius, slider.m_colorBackground);
-			
-			
-			//	Draw Middle Line
-			slider.draw_middleLine(percentNew);
-			
-			
-			//	Draw new Circle
-			slider.draw_circleFilled(slider.get_center(percentNew), c_radius, slider.m_colorCircle);
-			
-			
-			//	Draw Text
-			slider.draw_string(slider.m_text, e_align::TOP_CENTER, slider.m_font, slider.m_colorText);
-			
-			
-			//	Update Actual Shown Value
-			slider.m_percentActualShown = percentNew;
-		}
+		
+		//	Draw middle line
+		slider.draw_middleLine(percentNew);
+		
+		
+		//	Draw new circle
+		slider.draw_circleFilled(slider.get_center(percentNew), c_radius, slider.m_colorCircle);
+		
+		
+		//	Draw text
+		slider.draw_string(slider.m_text, e_align::TOP_CENTER, slider.m_font, slider.m_colorText);
+		
+		
+		//	Update actual shown value
+		slider.m_percentActualShown = percentNew;
 	}
 }
 
@@ -82,22 +78,22 @@ CODE_RAM void Slider::onCallback(Element& element)
 		
 		if(percent != slider.m_percentNewFromCallback)
 		{
-			//	Update Slider Value
+			//	Update slider value
 			slider.m_percentNewFromCallback = percent;
 			
 			
-			//	Execute User Callback first to be able to display Changes after
+			//	Execute user update first to be able to display changes after
 			if(slider.m_function_onCallback != nullptr)
 			{
 				slider.m_function_onCallback(element);
 			}
 			
 			
-			//	Request Update to draw the new Value
-			slider.m_updateRequested = true;
+			//	Request update to draw the new value
+			slider.requestUpdate();
 			
 			
-			//	Unlock Semaphore so that an Update can take Place
+			//	Unlock semaphore so that an update can take place
 			cmos.semaphore_unlock(&element);
 			cmos.sleep_ms(1);
 			cmos.semaphore_lock(&element);
@@ -114,19 +110,7 @@ CODE_RAM void Slider::onChangePage(Element& element)
 }
 
 
-CODE_RAM void Slider::onChangeLayer(Element& element)
-{
-	
-}
-
-
-CODE_RAM void Slider::onChangePosition(Element& element)
-{
-	
-}
-
-
-CODE_RAM void Slider::onChangeSize(Element& element)
+CODE_RAM void Slider::onChangeShape(Element& element)
 {
 	
 }
@@ -158,7 +142,7 @@ CODE_RAM uint8 Slider::calculatePercentage()
 
 CODE_RAM void Slider::draw_middleLine(uint8 percent)
 {
-	//	Check that Line Thickness is drawable
+	//	Check that line thickness is drawable
 	static_assert(Slider::c_lineThickness % 2 == 1, "Slider::c_lineThickness in slider.hpp must be an odd Number.");
 	
 	Vec2 center = get_center(percent);

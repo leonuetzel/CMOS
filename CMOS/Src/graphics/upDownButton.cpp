@@ -18,7 +18,7 @@ Array<Pair<UpDownButton*, Array<Element*>>> UpDownButton::m_upDownButtons;
 
 CODE_RAM void UpDownButton::onUpdate(Element& element)
 {
-	//	Get this Pointer
+	//	Get "this" pointer
 	UpDownButton* thisPointer = nullptr;
 	e_elementID elementID = e_elementID::BUTTON_INCREMENT;
 	for(auto& i: m_upDownButtons)
@@ -45,43 +45,32 @@ CODE_RAM void UpDownButton::onUpdate(Element& element)
 	UpDownButton& upDownButton = *thisPointer;
 	
 	
-	//	Full Rebuild
-	if(element.isRebuildRequested() == true)
-	{
-		
-	}
+	//	Limit value to given boundaries
+	upDownButton.m_value = Math::min(upDownButton.m_value, upDownButton.m_maxValue);
+	upDownButton.m_value = Math::max(upDownButton.m_value, upDownButton.m_minValue);
 	
 	
-	//	Normal Update
-	if(element.isUpdateRequested() == true)
+	//	Rebuild only if its a pure element, buttons handle this themselves
+	if(elementID == e_elementID::ELEMENT_NAME || elementID == e_elementID::ELEMENT_VALUE)
 	{
-		//	Limit Value to given Boundaries
-		upDownButton.m_value = Math::min(upDownButton.m_value, upDownButton.m_maxValue);
-		upDownButton.m_value = Math::max(upDownButton.m_value, upDownButton.m_minValue);
-		
-		
-		//	Rebuild only if its a pure Element, Buttons handle this themselves
-		if(elementID == e_elementID::ELEMENT_NAME || elementID == e_elementID::ELEMENT_VALUE)
+		String text;
+		if(elementID == e_elementID::ELEMENT_NAME)
 		{
-			String text;
-			if(elementID == e_elementID::ELEMENT_NAME)
-			{
-				text = upDownButton.m_variableName;
-			}
-			else
-			{
-				text = String(upDownButton.m_value);
-			}
-			
-			const Button& button(upDownButton.m_buttonIncrement);
-			element.draw_background(button.get_colorBackground());
-			element.draw_frame(button.get_colorFrame());
-			element.draw_string(text, Element::e_align::CENTER, button.get_font(), upDownButton.m_colorText);
+			text = upDownButton.m_variableName;
 		}
+		else
+		{
+			text = String(upDownButton.m_value);
+		}
+		
+		const Button& button(upDownButton.m_buttonIncrement);
+		element.draw_background(button.get_colorBackground());
+		element.draw_frame(button.get_colorFrame());
+		element.draw_string(text, Element::e_align::CENTER, button.get_font(), upDownButton.m_colorText);
 	}
 	
 	
-	//	Execute User Update
+	//	Execute user update
 	if(upDownButton.m_function_onUpdate != nullptr)
 	{
 		upDownButton.m_function_onUpdate(element);
@@ -94,7 +83,7 @@ CODE_RAM void UpDownButton::onCallback_buttonIncrement(Element& element)
 	Button& button = (Button&) element;
 	
 	
-	//	Get this Pointer
+	//	Get "this" pointer
 	UpDownButton* thisPointer = nullptr;
 	for(auto& i: m_upDownButtons)
 	{
@@ -142,7 +131,7 @@ CODE_RAM void UpDownButton::onCallback_buttonIncrement(Element& element)
 	}
 	
 	
-	//	User Callback
+	//	User callback
 	if(upDownButton.m_function_onCallback != nullptr)
 	{
 		upDownButton.m_function_onCallback(element);
@@ -156,7 +145,7 @@ CODE_RAM void UpDownButton::onCallback_buttonDecrement(Element& element)
 	Button& button = (Button&) element;
 	
 	
-	//	Get this Pointer
+	//	Get "this" Pointer
 	UpDownButton* thisPointer = nullptr;
 	for(auto& i: m_upDownButtons)
 	{
@@ -204,7 +193,7 @@ CODE_RAM void UpDownButton::onCallback_buttonDecrement(Element& element)
 	}
 	
 	
-	//	User Callback
+	//	User callback
 	if(upDownButton.m_function_onCallback != nullptr)
 	{
 		upDownButton.m_function_onCallback(element);

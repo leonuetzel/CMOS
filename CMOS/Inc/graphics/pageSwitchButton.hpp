@@ -28,9 +28,7 @@ class PageSwitchButton: public Button
 		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
 		f_element m_function_onChangePage;
-		f_element m_function_onChangeLayer;
-		f_element m_function_onChangePosition;
-		f_element m_function_onChangeSize;
+		f_element m_function_onChangeShape;
 		f_element m_function_onChangePageActual;
 		
 		
@@ -44,9 +42,7 @@ class PageSwitchButton: public Button
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
 		static void onChangePage(Element& element);
-		static void onChangeLayer(Element& element);
-		static void onChangePosition(Element& element);
-		static void onChangeSize(Element& element);
+		static void onChangeShape(Element& element);
 		static void onChangePageActual(Element& element);
 		
 		
@@ -65,16 +61,12 @@ class PageSwitchButton: public Button
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
 		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
-		constexpr inline void				set_function_onChangeLayer(f_element onChangeLayerFunction);
-		constexpr inline void				set_function_onChangePosition(f_element onChangePositionFunction);
-		constexpr inline void				set_function_onChangeSize(f_element onChangeSizeFunction);
+		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
 		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
 		constexpr inline f_element	get_function_onChangePage() const;
-		constexpr inline f_element	get_function_onChangeLayer() const;
-		constexpr inline f_element	get_function_onChangePosition() const;
-		constexpr inline f_element	get_function_onChangeSize() const;
+		constexpr inline f_element	get_function_onChangeShape() const;
 		constexpr inline f_element	get_function_onChangePageActual() const;
 };
 
@@ -113,17 +105,13 @@ inline PageSwitchButton::PageSwitchButton(Button button)
 		m_function_onUpdate(Button::get_function_onUpdate()),
 		m_function_onCallback(Button::get_function_onCallback()),
 		m_function_onChangePage(Button::get_function_onChangePage()),
-		m_function_onChangeLayer(Button::get_function_onChangeLayer()),
-		m_function_onChangePosition(Button::get_function_onChangePosition()),
-		m_function_onChangeSize(Button::get_function_onChangeSize()),
+		m_function_onChangeShape(Button::get_function_onChangeShape()),
 		m_function_onChangePageActual(Button::get_function_onChangePageActual())
 {
 	Button::set_function_onUpdate(onUpdate);
 	Button::set_function_onCallback(onCallback);
 	Button::set_function_onChangePage(onChangePage);
-	Button::set_function_onChangeLayer(onChangeLayer);
-	Button::set_function_onChangePosition(onChangePosition);
-	Button::set_function_onChangeSize(onChangeSize);
+	Button::set_function_onChangeShape(onChangeShape);
 	Button::set_function_onChangePageActual(onChangePageActual);
 	
 	writeText();
@@ -153,21 +141,9 @@ constexpr inline void PageSwitchButton::set_function_onChangePage(f_element onCh
 }
 
 
-constexpr inline void PageSwitchButton::set_function_onChangeLayer(f_element onChangeLayerFunction)
+constexpr inline void PageSwitchButton::set_function_onChangeShape(f_element onChangeShapeFunction)
 {
-	m_function_onChangeLayer = onChangeLayerFunction;
-}
-
-
-constexpr inline void PageSwitchButton::set_function_onChangePosition(f_element onChangePositionFunction)
-{
-	m_function_onChangePosition = onChangePositionFunction;
-}
-
-
-constexpr inline void PageSwitchButton::set_function_onChangeSize(f_element onChangeSizeFunction)
-{
-	m_function_onChangeSize = onChangeSizeFunction;
+	m_function_onChangeShape = onChangeShapeFunction;
 }
 
 
@@ -195,21 +171,9 @@ constexpr inline Element::f_element PageSwitchButton::get_function_onChangePage(
 }
 
 
-constexpr inline Element::f_element PageSwitchButton::get_function_onChangeLayer() const
+constexpr inline Element::f_element PageSwitchButton::get_function_onChangeShape() const
 {
-	return(m_function_onChangeLayer);
-}
-
-
-constexpr inline Element::f_element PageSwitchButton::get_function_onChangePosition() const
-{
-	return(m_function_onChangePosition);
-}
-
-
-constexpr inline Element::f_element PageSwitchButton::get_function_onChangeSize() const
-{
-	return(m_function_onChangeSize);
+	return(m_function_onChangeShape);
 }
 
 

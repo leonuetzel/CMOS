@@ -40,10 +40,12 @@ class MessageBox
 		
 		//	Static Member
 		static constexpr uint32 c_pressTime = 25;
-		static MessageBox* m_messageBox;
+		static UniqueArray<MessageBox*> m_messageBoxes;
 		
 		
 		//	Non-static Member
+		const uint8 m_pageOnCreation;
+		const uint8 m_page;
 		const String m_message;
 		Button* m_buttons[6];
 		Element* m_text;

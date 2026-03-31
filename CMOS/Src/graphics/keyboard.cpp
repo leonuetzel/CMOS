@@ -66,6 +66,7 @@ const Keyboard::Key Keyboard::c_layout[] =
 	{nullptr, Rectangle<float>(0.81, 0.84, 0.08, 0.19), "0"     , "="   , e_key::NUMBER	, e_key::SIGN},
 	{nullptr, Rectangle<float>(0.90, 0.84, 0.10, 0.19), "Del"  , "Del"  , e_key::DELETE	, e_key::DELETE}
 };
+UniqueArray<Keyboard*> Keyboard::m_keyboards;
 
 
 
@@ -73,101 +74,29 @@ const Keyboard::Key Keyboard::c_layout[] =
 /*                      						Private	  			 						 						 */
 /*****************************************************************************/
 
-Keyboard::Keyboard()
-	:	m_caseMode(e_caseMode::FIRST_UPPER),
-		m_upperCase(true),
-		m_primaryMode(true),
-		m_enterPressed(false)
-{
-	Graphics& graphics = Graphics::get();
-	const Vec2 displayDimensions = graphics.get_displayDimensions();
-	const Vec2 keyboardDimensions = Vec2(displayDimensions.x * 1.0f, displayDimensions.y * 0.5f);
-	
-	
-	//	Create Buttons
-	for(auto& i: c_layout)
-	{
-		//	Create Button
-		Button* button = new Button
-		(
-			Element
-			(
-				Rect
-				(
-					i.area.position.x * keyboardDimensions.x,
-					i.area.position.y * keyboardDimensions.y,
-					i.area.size.x * keyboardDimensions.x,
-					i.area.size.y * keyboardDimensions.y
-				),
-				graphics.get_pageActual(),
-				graphics.get_numberOfLayers() - 1,
-				nullptr,
-				callback,
-				0,
-				Element::e_frameType::ROUNDED
-			),
-			i.primary_text,
-			Fonts::CalibriLight16,
-			Colors::white,
-			Colors::black,
-			Colors::silver,
-			Colors::royal_blue,
-			10
-		);
-		
-		
-		//	Create Key to save
-		Key key = i;
-		key.button = button;
-		
-		
-		//	Save Key
-		m_keys += key;
-	}
-	
-	
-	//	Create Text Display
-	m_text = new Element
-	(
-		Rect(0, displayDimensions.y * 0.65f, displayDimensions.x, 30),
-		graphics.get_pageActual(),
-		graphics.get_numberOfLayers() - 1,
-		update,
-		nullptr,
-		0,
-		Element::e_frameType::ROUNDED
-	);
-}
-
-
-Keyboard::~Keyboard()
-{
-	(*this)(false);
-	for(auto& i: m_keys)
-	{
-		delete i.button;
-	}
-	if(m_text != nullptr)
-	{
-		delete m_text;
-	}
-}
-
-
-
-
-
-
-
 void Keyboard::callback(Element& element)
 {
 	Button& button = (Button&) element;
 	
 	
+	//	Find the keyboard which has been interacted with
+	Keyboard* keyboard = nullptr;
+	for(auto& i: m_keyboards)
+	{
+		if(i->m_page == button.get_page())
+		{
+			keyboard = i;
+		}
+	}
+	if(keyboard == nullptr)
+	{
+		return;
+	}
+	
+	
 	//	Check for valid Button
-	Keyboard& keyboard = Keyboard::get();
 	Key* key = nullptr;
-	for(auto& i: keyboard.m_keys)
+	for(auto& i: keyboard->m_keys)
 	{
 		if(i.button == &button)
 		{
@@ -182,7 +111,7 @@ void Keyboard::callback(Element& element)
 	
 	//	Read Key Category
 	e_key keyCategory = key->primary_ID;
-	if(keyboard.m_primaryMode == false)
+	if(keyboard->m_primaryMode == false)
 	{
 		keyCategory = key->secondary_ID;
 	}
@@ -192,62 +121,62 @@ void Keyboard::callback(Element& element)
 	{
 		case e_key::LAYOUT:
 		{
-			if(keyboard.m_primaryMode == true)
+			if(keyboard->m_primaryMode == true)
 			{
-				for(auto& i: keyboard.m_keys)
+				for(auto& i: keyboard->m_keys)
 				{
 					i.button->set_text(i.secondary_text);
 				}
-				keyboard.m_primaryMode = false;
+				keyboard->m_primaryMode = false;
 			}
 			else
 			{
-				for(auto& i: keyboard.m_keys)
+				for(auto& i: keyboard->m_keys)
 				{
 					i.button->set_text(i.primary_text);
 				}
-				keyboard.m_primaryMode = true;
+				keyboard->m_primaryMode = true;
 			}
 		}
 		break;
 		
 		case e_key::ENTER:
 		{
-			keyboard.m_enterPressed = true;
-			keyboard.hide();
+			keyboard->m_enterPressed = true;
+			keyboard->hide();
 		}
 		break;
 		
 		case e_key::SHIFT:
 		{
-			switch(keyboard.m_caseMode)
+			switch(keyboard->m_caseMode)
 			{
 				case e_caseMode::LOWER_CASE:
 				{
-					keyboard.m_caseMode = e_caseMode::FIRST_UPPER;
-					if(keyboard.m_upperCase == false)
+					keyboard->m_caseMode = e_caseMode::FIRST_UPPER;
+					if(keyboard->m_upperCase == false)
 					{
-						keyboard.switchCase();
+						keyboard->switchCase();
 					}
 				}
 				break;
 				
 				case e_caseMode::UPPER_CASE:
 				{
-					keyboard.m_caseMode = e_caseMode::LOWER_CASE;
-					if(keyboard.m_upperCase == true)
+					keyboard->m_caseMode = e_caseMode::LOWER_CASE;
+					if(keyboard->m_upperCase == true)
 					{
-						keyboard.switchCase();
+						keyboard->switchCase();
 					}
 				}
 				break;
 				
 				case e_caseMode::FIRST_UPPER:
 				{
-					keyboard.m_caseMode = e_caseMode::UPPER_CASE;
-					if(keyboard.m_upperCase == false)
+					keyboard->m_caseMode = e_caseMode::UPPER_CASE;
+					if(keyboard->m_upperCase == false)
 					{
-						keyboard.switchCase();
+						keyboard->switchCase();
 					}
 				}
 				break;
@@ -265,18 +194,18 @@ void Keyboard::callback(Element& element)
 		case e_key::NUMBER:
 		case e_key::SIGN:
 		{
-			keyboard.m_buffer += button.get_text();
-			if(keyboard.m_buffer.get_size() > 0)
+			keyboard->m_buffer += button.get_text();
+			if(keyboard->m_buffer.get_size() > 0)
 			{
-				if(keyboard.m_caseMode != e_caseMode::UPPER_CASE)
+				if(keyboard->m_caseMode != e_caseMode::UPPER_CASE)
 				{
-					if(keyboard.m_upperCase == true)
+					if(keyboard->m_upperCase == true)
 					{
-						keyboard.switchCase();
+						keyboard->switchCase();
 					}
-					if(keyboard.m_caseMode == e_caseMode::FIRST_UPPER)
+					if(keyboard->m_caseMode == e_caseMode::FIRST_UPPER)
 					{
-						keyboard.m_caseMode = e_caseMode::LOWER_CASE;
+						keyboard->m_caseMode = e_caseMode::LOWER_CASE;
 					}
 				}
 			}
@@ -285,13 +214,13 @@ void Keyboard::callback(Element& element)
 		
 		case e_key::DELETE:
 		{
-			keyboard.m_buffer.eraseFromEnd(1);
-			if(keyboard.m_buffer.get_size() == 0)
+			keyboard->m_buffer.eraseFromEnd(1);
+			if(keyboard->m_buffer.get_size() == 0)
 			{
-				keyboard.m_caseMode = e_caseMode::FIRST_UPPER;
-				if(keyboard.m_upperCase == false)
+				keyboard->m_caseMode = e_caseMode::FIRST_UPPER;
+				if(keyboard->m_upperCase == false)
 				{
-					keyboard.switchCase();
+					keyboard->switchCase();
 				}
 			}
 		}
@@ -308,16 +237,32 @@ void Keyboard::callback(Element& element)
 	//	Update Text Display
 	if(keyCategory != e_key::ENTER)
 	{
-		keyboard.m_text->requestUpdate();
+		keyboard->m_text->requestUpdate();
 	}
 }
 
 
 void Keyboard::update(Element& element)
 {
+	//	Find the keyboard which has been interacted with
+	Keyboard* keyboard = nullptr;
+	for(auto& i: m_keyboards)
+	{
+		if(i->m_page == element.get_page())
+		{
+			keyboard = i;
+		}
+	}
+	if(keyboard == nullptr)
+	{
+		return;
+	}
+	
+	
+	//	Update text display
 	element.draw_background(Colors::black);
 	element.draw_frame(Colors::silver),
-	element.draw_string(Keyboard::get().m_buffer, Element::e_align::CENTER, Fonts::CalibriLight16, Colors::white);
+	element.draw_string(keyboard->m_buffer, Element::e_align::CENTER, Fonts::CalibriLight16, Colors::white);
 }
 
 
@@ -388,10 +333,111 @@ void Keyboard::switchCase()
 /*                      						Public	  			 						 						 */
 /*****************************************************************************/
 
-Keyboard& Keyboard::get()
+Keyboard::Keyboard()
+	:	m_pageOnCreation(Graphics::get().get_currentPage()),
+		m_page(Graphics::get().add_page()),
+		m_caseMode(e_caseMode::FIRST_UPPER),
+		m_upperCase(true),
+		m_primaryMode(true),
+		m_enterPressed(false)
 {
-	static Keyboard keyboard;
-	return(keyboard);
+	if(m_page == 0xFF)
+	{
+		return;
+	}
+	
+	
+	Graphics& graphics = Graphics::get();
+	const Vec2 displayDimensions = graphics.get_displayDimensions();
+	const Vec2 keyboardDimensions = Vec2(displayDimensions.x * 1.0f, displayDimensions.y * 0.5f);
+	
+	
+	//	Show Keyboard on its own page which has been freshly created by the constructor (m_page)
+	if(graphics.set_currentPage(m_page) != OK)
+	{
+		return;
+	}
+	
+	
+	//	Create buttons
+	for(auto& i: c_layout)
+	{
+		//	Create button
+		Button* button = new Button
+		(
+			Element
+			(
+				Rect
+				(
+					i.area.position.x	* keyboardDimensions.x,
+					i.area.position.y	* keyboardDimensions.y,
+					i.area.size.x			* keyboardDimensions.x,
+					i.area.size.y			* keyboardDimensions.y
+				),
+				m_page,
+				0,
+				nullptr
+			),
+			i.primary_text,
+			Fonts::CalibriLight16,
+			Colors::white,
+			Colors::black,
+			Colors::silver,
+			Colors::royal_blue,
+			10
+		);
+		button->set_function_onCallback(callback);
+		
+		
+		//	Create key to save
+		Key key = i;
+		key.button = button;
+		
+		
+		//	Save key
+		m_keys += key;
+	}
+	
+	
+	//	Create text display
+	m_text = new Element
+	(
+		Rect(0, displayDimensions.y * 0.65f, displayDimensions.x, 30),
+		m_page,
+		0,
+		update
+	);
+	
+	
+	//	Add Keyboard to list of Keyboards
+	m_keyboards += this;
+}
+
+
+Keyboard::~Keyboard()
+{
+	(*this)(false);
+	for(auto& i: m_keys)
+	{
+		delete i.button;
+	}
+	if(m_text != nullptr)
+	{
+		delete m_text;
+	}
+	
+	
+	//	Remove page where the keyboard was shown
+	Graphics& graphics = Graphics::get();
+	graphics.remove_page(m_page);
+	
+	
+	//	Go back to the page where the keyboard was created
+	graphics.set_currentPage(m_pageOnCreation);
+	
+	
+	//	Remove this Keyboard from list of Keyboards
+	m_keyboards.erase(this);
 }
 
 
@@ -454,23 +500,11 @@ String Keyboard::operator()(bool showNow, bool waitForEnter)
 void Keyboard::show()
 {
 	Graphics& graphics = Graphics::get();
-	const uint8 pageActual = graphics.get_pageActual();
 	for(auto& i: m_keys)
 	{
 		graphics += i.button;
-		i.button->set_page(pageActual);
 	}
 	graphics += m_text;
-	m_text->set_page(pageActual);
-	
-	
-	//	Set Blending to dim other Elements and disable Touch Function of other Layers
-	const uint32 numberOfLayers = graphics.get_numberOfLayers();
-	for(uint32 i = 0; i < numberOfLayers - 1; i++)
-	{
-		graphics.set_layerAlpha(i, 30);
-		graphics.set_layerTouchability(i, false);
-	}
 }
 
 
@@ -482,13 +516,4 @@ void Keyboard::hide()
 		graphics -= i.button;
 	}
 	graphics -= m_text;
-	
-	
-	//	Reset Blending and Touchability
-	const uint32 numberOfLayers = graphics.get_numberOfLayers();
-	for(uint32 i = 0; i < numberOfLayers - 1; i++)
-	{
-		graphics.set_layerAlpha(i, 0xFF);
-		graphics.set_layerTouchability(i, true);
-	}
 }
