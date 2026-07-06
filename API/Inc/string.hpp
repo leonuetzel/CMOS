@@ -46,6 +46,8 @@ class String: public Array<char>
 		String(uint32 number, uint32 minimumDigits = c_invalid);
 		String(int64 number, uint32 minimumDigits = c_invalid);
 		String(uint64 number, uint32 minimumDigits = c_invalid);
+		String(float number, uint32 decimalPlaces, char decimalPoint = '.');
+		String(double number, uint32 decimalPlaces, char decimalPoint = '.');
 		
 		template<typename dataType>
 		String(dataType number, uint32 decimalPlaces, String unit = "", char decimalPoint = '.');

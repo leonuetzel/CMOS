@@ -110,6 +110,132 @@ CODE_RAM String::String(uint64 number, uint32 minimumDigits)
 }
 
 
+CODE_RAM String::String(float number, uint32 decimalPlaces, char decimalPoint)
+	:	String()
+{
+	//	Check Special Cases
+	if(Math::is_nan(number) == true)
+	{
+		operator=("NaN");
+		return;
+	}
+	if(Math::is_inf(number) == true)
+	{
+		operator=("Inf");
+		return;
+	}
+	
+	
+	//	Sign
+	if(number < 0)
+	{
+		Array::operator+=('-');
+		number *= -1;
+	}
+	
+	
+	//	Convert Digits left of Decimal Point to String and append them to this
+	uint32 numberOfPreDotDigits = 1;
+	if(number >= 10)
+	{
+		numberOfPreDotDigits = Math::log(10, number) + 1;
+	}
+	
+	for(uint32 i = 0; i < numberOfPreDotDigits; i++)
+	{
+		const uint8 digit = Math::digit(number, numberOfPreDotDigits - i - 1);
+		const char character = toASCII(digit);
+		Array::operator+=(character);
+	}
+	
+	
+	//	If no decimal Places are requested, return here and dont add any Decimal Digits or Decimal Point
+	if(decimalPlaces == 0)
+	{
+		return;
+	}
+	
+	
+	//	Decimal Point
+	Array::operator+=(decimalPoint);
+	
+	
+	//	Convert Digits right of Decimal Point to String and append them to this
+	for(uint32 i = 0; i < decimalPlaces; i++)
+	{
+		//	Shift number one Decimal Point to the left
+		number *= 10;
+		uint64 numberAsInt = number;
+		const uint8 digit = numberAsInt % 10;
+		const char character = toASCII(digit);
+		Array::operator+=(character);
+	}
+}
+
+
+CODE_RAM String::String(double number, uint32 decimalPlaces, char decimalPoint)
+	:	String()
+{
+	//	Check Special Cases
+	if(Math::is_nan(number) == true)
+	{
+		operator=("NaN");
+		return;
+	}
+	if(Math::is_inf(number) == true)
+	{
+		operator=("Inf");
+		return;
+	}
+	
+	
+	//	Sign
+	if(number < 0)
+	{
+		Array::operator+=('-');
+		number *= -1;
+	}
+	
+	
+	//	Convert Digits left of Decimal Point to String and append them to this
+	uint32 numberOfPreDotDigits = 1;
+	if(number >= 10)
+	{
+		numberOfPreDotDigits = Math::log(10, number) + 1;
+	}
+	
+	for(uint32 i = 0; i < numberOfPreDotDigits; i++)
+	{
+		const uint8 digit = Math::digit(number, numberOfPreDotDigits - i - 1);
+		const char character = toASCII(digit);
+		Array::operator+=(character);
+	}
+	
+	
+	//	If no decimal Places are requested, return here and dont add any Decimal Digits or Decimal Point
+	if(decimalPlaces == 0)
+	{
+		return;
+	}
+	
+	
+	//	Decimal Point
+	Array::operator+=(decimalPoint);
+	
+	
+	//	Convert Digits right of Decimal Point to String and append them to this
+	for(uint32 i = 0; i < decimalPlaces; i++)
+	{
+		//	Shift number one Decimal Point to the left
+		number *= 10;
+		uint64 numberAsInt = number;
+		const uint8 digit = numberAsInt % 10;
+		const char character = toASCII(digit);
+		Array::operator+=(character);
+	}
+}
+
+
 CODE_RAM String::String(Time time, Language::e_language language)
 	:	String()
 {
