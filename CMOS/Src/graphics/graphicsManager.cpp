@@ -399,8 +399,8 @@ void Graphics::register_touchData(Vec2 touchPoint, e_touchEvent touchEvent)
 
 Graphics& Graphics::operator+=(Element& element)
 {
-	//	Check updateFunction and page
-	if(element.m_function_onUpdate == nullptr || element.m_page >= m_numberOfPages)
+	//	Check page
+	if(element.m_page >= m_numberOfPages)
 	{
 		return(*this);
 	}

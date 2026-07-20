@@ -33,7 +33,11 @@ CODE_RAM void Element::onUpdate()
 	}
 	
 	
-	m_function_onUpdate(*this);
+	//	Call update function if it is set
+	if(m_function_onUpdate != nullptr)
+	{
+		m_function_onUpdate(*this);
+	}
 	
 	
 	//	Clear rebuild request flag
