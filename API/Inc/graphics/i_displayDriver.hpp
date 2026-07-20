@@ -12,16 +12,21 @@ class I_DisplayDriver
 		
 		typedef struct
 		{
-			int16 h_total;
 			int16 h_active;
 			int16 h_backporch;
 			int16 h_frontporch;
 			int16 h_syncwidth;
-			int16 v_total;
 			int16 v_active;
 			int16 v_backporch;
 			int16 v_frontporch;
 			int16 v_syncwidth;
+			
+			uint32 pixelClockFrequency;
+			
+			bool hSyncActiveHigh;
+			bool vSyncActiveHigh;
+			bool notDataEnableActiveHigh;
+			bool pixelClockActiveHigh;
 		}s_displayData;
 		
 		

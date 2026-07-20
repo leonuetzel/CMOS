@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphicsManager.hpp"
+#include "displays.hpp"
 #include "element.hpp"
 #include "slider.hpp"
 #include "loading.hpp"
