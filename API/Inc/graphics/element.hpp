@@ -70,9 +70,9 @@ class Element	:	protected Rect
 		bool m_visible;
 		bool m_touchable;
 		f_element m_function_onCallback;
-		f_element m_function_onChangePage;
+		f_element m_function_onChangeMyPage;
 		f_element m_function_onChangeShape;
-		f_element m_function_onChangePageActual;
+		f_element m_function_onChangeCurrentPage;
 		
 		const Rect& m_backBufferShape;
 		Color* m_backBufferData[2];
@@ -90,7 +90,7 @@ class Element	:	protected Rect
 		//	Member Functions
 		void onUpdate();
 		void onCallback();
-		void onChangePageActual();
+		void onChangeCurrentPage();
 		
 		feedback draw_rectangleFilledManual(Rect rectangle, Color color);
 		void syncFramebuffers();
@@ -132,14 +132,14 @@ class Element	:	protected Rect
 		
 		constexpr inline feedback		set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
-		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
+		constexpr inline void				set_function_onChangeMyPage(f_element onChangePageFunction);
 		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
-		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
+		constexpr inline void				set_function_onChangeCurrentPage(f_element onChangePageCurrentFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
-		constexpr inline f_element	get_function_onChangePage() const;
+		constexpr inline f_element	get_function_onChangeMyPage() const;
 		constexpr inline f_element	get_function_onChangeShape() const;
-		constexpr inline f_element	get_function_onChangePageActual() const;
+		constexpr inline f_element	get_function_onChangeCurrentPage() const;
 		
 		constexpr inline void set_frameType(e_frameType frameType);
 		constexpr inline void set_visibility(bool visible);
@@ -240,9 +240,9 @@ constexpr inline void Element::set_function_onCallback(f_element onCallbackFunct
 }
 
 
-constexpr inline void Element::set_function_onChangePage(f_element onChangePageFunction)
+constexpr inline void Element::set_function_onChangeMyPage(f_element onChangePageFunction)
 {
-	m_function_onChangePage = onChangePageFunction;
+	m_function_onChangeMyPage = onChangePageFunction;
 }
 
 
@@ -252,9 +252,9 @@ constexpr inline void Element::set_function_onChangeShape(f_element onChangeShap
 }
 
 
-constexpr inline void Element::set_function_onChangePageActual(f_element onChangePageActualFunction)
+constexpr inline void Element::set_function_onChangeCurrentPage(f_element onChangePageCurrentFunction)
 {
-	m_function_onChangePageActual = onChangePageActualFunction;
+	m_function_onChangeCurrentPage = onChangePageCurrentFunction;
 }
 
 
@@ -270,9 +270,9 @@ constexpr inline Element::f_element Element::get_function_onCallback() const
 }
 
 
-constexpr inline Element::f_element Element::get_function_onChangePage() const
+constexpr inline Element::f_element Element::get_function_onChangeMyPage() const
 {
-	return(m_function_onChangePage);
+	return(m_function_onChangeMyPage);
 }
 
 
@@ -282,9 +282,9 @@ constexpr inline Element::f_element Element::get_function_onChangeShape() const
 }
 
 
-constexpr inline Element::f_element Element::get_function_onChangePageActual() const
+constexpr inline Element::f_element Element::get_function_onChangeCurrentPage() const
 {
-	return(m_function_onChangePageActual);
+	return(m_function_onChangeCurrentPage);
 }
 
 

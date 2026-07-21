@@ -104,7 +104,7 @@ CODE_RAM void Slider::onCallback(Element& element)
 }
 
 
-CODE_RAM void Slider::onChangePage(Element& element)
+CODE_RAM void Slider::onChangeMyPage(Element& element)
 {
 	
 }

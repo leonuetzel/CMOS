@@ -82,6 +82,7 @@ CODE_RAM void ButtonIcon::onCallback(Element& element)
 		{
 			buttonIcon.m_isPressed = true;
 			buttonIcon.requestRebuild();
+			buttonIcon.requestUpdate();
 		}
 		
 		counter_ms++;
@@ -97,9 +98,13 @@ CODE_RAM void ButtonIcon::onCallback(Element& element)
 	//	Draw button in un-pressed condition
 	buttonIcon.m_isPressed = false;
 	buttonIcon.requestRebuild();
+	buttonIcon.requestUpdate();
 	
 	cmos.semaphore_unlock(&element);
-	cmos.sleep_ms(1);
+	while(buttonIcon.isRebuildRequested() == true)
+	{
+		cmos.sleep_ms(1);
+	}
 	cmos.semaphore_lock(&element);
 	
 	
@@ -112,13 +117,13 @@ CODE_RAM void ButtonIcon::onCallback(Element& element)
 }
 
 
-CODE_RAM void ButtonIcon::onChangePage(Element& element)
+CODE_RAM void ButtonIcon::onChangeMyPage(Element& element)
 {
 	ButtonIcon& buttonIcon = (ButtonIcon&) element;
 	
-	if(buttonIcon.m_function_onChangePage != nullptr)
+	if(buttonIcon.m_function_onChangeMyPage != nullptr)
 	{
-		buttonIcon.m_function_onChangePage(element);
+		buttonIcon.m_function_onChangeMyPage(element);
 	}
 }
 
@@ -134,13 +139,13 @@ CODE_RAM void ButtonIcon::onChangeShape(Element& element)
 }
 
 
-CODE_RAM void ButtonIcon::onChangePageActual(Element& element)
+CODE_RAM void ButtonIcon::onChangeCurrentPage(Element& element)
 {
 	ButtonIcon& buttonIcon = (ButtonIcon&) element;
 	
-	if(buttonIcon.m_function_onChangePageActual != nullptr)
+	if(buttonIcon.m_function_onChangeCurrentPage != nullptr)
 	{
-		buttonIcon.m_function_onChangePageActual(element);
+		buttonIcon.m_function_onChangeCurrentPage(element);
 	}
 }
 

@@ -166,7 +166,7 @@ CODE_RAM void Directory::onCallback(Element& element)
 }
 
 
-CODE_RAM void Directory::onChangePage(Element& element)
+CODE_RAM void Directory::onChangeMyPage(Element& element)
 {
 	
 }
@@ -227,12 +227,12 @@ Directory::Directory(Textbox textbox, String path, const RectGraphic& folderSymb
 		
 		m_function_onUpdate(Textbox::get_function_onUpdate()),
 		m_function_onCallback(Textbox::get_function_onCallback()),
-		m_function_onChangePage(Textbox::get_function_onChangePage()),
+		m_function_onChangeMyPage(Textbox::get_function_onChangeMyPage()),
 		m_function_onChangeShape(Textbox::get_function_onChangeShape())
 {
 	Textbox::set_function_onUpdate(onUpdate);
 	Textbox::set_function_onCallback(onCallback);
-	Textbox::set_function_onChangePage(onChangePage);
+	Textbox::set_function_onChangeMyPage(onChangeMyPage);
 	Textbox::set_function_onChangeShape(onChangeShape);
 	
 	set_directory(path);

@@ -211,7 +211,7 @@ CODE_RAM void Textbox::onCallback(Element& element)
 }
 
 
-CODE_RAM void Textbox::onChangePage(Element& element)
+CODE_RAM void Textbox::onChangeMyPage(Element& element)
 {
 	
 }
@@ -312,12 +312,12 @@ Textbox::Textbox(Element element, const Font& font)
 		
 		m_function_onUpdate(Element::get_function_onUpdate()),
 		m_function_onCallback(Element::get_function_onCallback()),
-		m_function_onChangePage(Element::get_function_onChangePage()),
+		m_function_onChangeMyPage(Element::get_function_onChangeMyPage()),
 		m_function_onChangeShape(Element::get_function_onChangeShape())
 {
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
-	Element::set_function_onChangePage(onChangePage);
+	Element::set_function_onChangeMyPage(onChangeMyPage);
 	Element::set_function_onChangeShape(onChangeShape);
 }
 

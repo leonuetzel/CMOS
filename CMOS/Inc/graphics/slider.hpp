@@ -37,15 +37,15 @@ class Slider: public Element
 		
 		f_element m_function_onUpdate;
 		f_element m_function_onCallback;
-		f_element m_function_onChangePage;
+		f_element m_function_onChangeMyPage;
 		f_element m_function_onChangeShape;
-		f_element m_function_onChangePageActual;
+		f_element m_function_onChangeCurrentPage;
 		
 		static void onUpdate(Element& element);
 		static void onCallback(Element& element);
-		static void onChangePage(Element& element);
+		static void onChangeMyPage(Element& element);
 		static void onChangeShape(Element& element);
-		static void onChangePageActual(Element& element);
+		static void onChangeCurrentPage(Element& element);
 		
 		uint8 calculatePercentage();
 		constexpr inline Vec2 get_center(uint8 percent);
@@ -62,14 +62,14 @@ class Slider: public Element
 		
 		constexpr inline void				set_function_onUpdate(f_element onUpdateFunction);
 		constexpr inline void				set_function_onCallback(f_element onCallbackFunction);
-		constexpr inline void				set_function_onChangePage(f_element onChangePageFunction);
+		constexpr inline void				set_function_onChangeMyPage(f_element onChangeMyPageFunction);
 		constexpr inline void				set_function_onChangeShape(f_element onChangeShapeFunction);
-		constexpr inline void				set_function_onChangePageActual(f_element onChangePageActualFunction);
+		constexpr inline void				set_function_onChangeCurrentPage(f_element onChangeCurrentPageFunction);
 		constexpr inline f_element	get_function_onUpdate() const;
 		constexpr inline f_element	get_function_onCallback() const;
-		constexpr inline f_element	get_function_onChangePage() const;
+		constexpr inline f_element	get_function_onChangeMyPage() const;
 		constexpr inline f_element	get_function_onChangeShape() const;
-		constexpr inline f_element	get_function_onChangePageActual() const;
+		constexpr inline f_element	get_function_onChangeCurrentPage() const;
 		
 		constexpr inline feedback set_colorLine(Color colorBottom, Color colorTop);
 		constexpr inline feedback set_colorCircle(Color color);
@@ -140,12 +140,12 @@ inline Slider::Slider(Element element, String text, const Font& font, Color colo
 		
 		m_function_onUpdate(Element::get_function_onUpdate()),
 		m_function_onCallback(Element::get_function_onCallback()),
-		m_function_onChangePage(Element::get_function_onChangePage()),
+		m_function_onChangeMyPage(Element::get_function_onChangeMyPage()),
 		m_function_onChangeShape(Element::get_function_onChangeShape())
 {
 	Element::set_function_onUpdate(onUpdate);
 	Element::set_function_onCallback(onCallback);
-	Element::set_function_onChangePage(onChangePage);
+	Element::set_function_onChangeMyPage(onChangeMyPage);
 	Element::set_function_onChangeShape(onChangeShape);
 }
 
@@ -167,9 +167,9 @@ constexpr inline void Slider::set_function_onCallback(f_element onCallbackFuncti
 }
 
 
-constexpr inline void Slider::set_function_onChangePage(f_element onChangePageFunction)
+constexpr inline void Slider::set_function_onChangeMyPage(f_element onChangeMyPageFunction)
 {
-	m_function_onChangePage = onChangePageFunction;
+	m_function_onChangeMyPage = onChangeMyPageFunction;
 }
 
 
@@ -191,9 +191,9 @@ constexpr inline Element::f_element Slider::get_function_onCallback() const
 }
 
 
-constexpr inline Element::f_element Slider::get_function_onChangePage() const
+constexpr inline Element::f_element Slider::get_function_onChangeMyPage() const
 {
-	return(m_function_onChangePage);
+	return(m_function_onChangeMyPage);
 }
 
 

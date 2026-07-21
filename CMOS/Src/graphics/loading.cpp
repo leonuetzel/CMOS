@@ -84,7 +84,7 @@ CODE_RAM void Loading::onCallback(Element& element)
 }
 
 
-CODE_RAM void Loading::onChangePage(Element& element)
+CODE_RAM void Loading::onChangeMyPage(Element& element)
 {
 	
 }

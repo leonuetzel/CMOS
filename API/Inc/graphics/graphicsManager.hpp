@@ -135,6 +135,11 @@ inline Graphics::Graphics()
 {
 	m_frameBufferData[0] = nullptr;
 	m_frameBufferData[1] = nullptr;
+	
+	
+	//	Create semaphore for variable "m_numberOfPages"
+	CMOS& cmos = CMOS::get();
+	cmos.semaphore_create(&m_numberOfPages);
 }
 
 

@@ -83,16 +83,30 @@ CODE_RAM void Graphics::manager()
 		{
 			for(auto& i: m_elements)
 			{
-				//	Call "onChangePageActual" function for all elements
-				i->onChangePageActual();
+				//	Call "onChangeCurrentPage" function for all elements
+				i->onChangeCurrentPage();
 				
 				
 				//	Request update for all elements on the current page
-				//	Do this AFTER calling the "onChangePageActual" function
-				//	This way elements like the PageSwitchButton can change their page and then show up on the new current page
+				//	Do this AFTER calling the "onChangeCurrentPage" function
+				//	This way elements that move between pages can change their page and then show up on the new current page
 				if(i->m_page == m_pageCurrent)
 				{
+					i->requestRebuild();
 					i->requestUpdate();
+				}
+				else
+				{
+					//	Elements that are not on the current page need to be erased from the backbuffer
+					//	Choose the correct backbuffer and draw the rectangle by using the graphic accelerator
+					Rect rectToClear(*i);
+					rectToClear.position += i->m_backBufferShape.position;
+					const RectGraphic backbufferActive(i->m_backBufferShape, i->m_backBufferData[1 - i->m_backbufferIndex]);
+					m_graphicAccelerator->drawfilledRectangleWithSingleColor(backbufferActive, Colors::transparent, rectToClear);
+					
+					
+					//	Since the graphic accelerator has drawn directly into the backbuffer, we can set the flag that both framebuffers are not identical
+					i->m_areBothFramebuffersIdentical = false;
 				}
 			}
 			
@@ -352,18 +366,30 @@ void Graphics::register_touchData(Vec2 touchPoint, I_TouchController::e_touchEve
 		Element::m_touchEvent = touchEvent;
 		
 		
+		//	Calculate the touch point relative to the display layer (framebuffer) coordinates
+		//	Check if the touch point is within the framebuffer's shape (if not, the touch event is relevant for the RELEASE event of Buttons, etc...)
+		if(m_frameBufferShape.contains(touchPoint) == false)
+		{
+			return;
+		}
+		const Vec2 touchPoint_relativeToLayer(touchPoint - m_frameBufferShape.position);
+		
+		
 		//	Determine which element has been touched
 		for(auto& i: m_elements)
 		{
 			if(i->m_page == m_pageCurrent && i->m_touchable == true && i->m_visible == true)
 			{
-				const Vec2 touchPoint_relativeToElement(touchPoint - i->position);
-				if(i->containsPoint(touchPoint_relativeToElement) == true)
+				if(i->containsPoint(touchPoint_relativeToLayer) == true)
 				{
 					i->m_touchValid = true;
 					if(i->m_function_onCallback != nullptr)
 					{
-						i->m_touchPosition = touchPoint_relativeToElement;
+						//	Calculate the touch position relative to the element's position and store it in the element's member variable
+						i->m_touchPosition = touchPoint_relativeToLayer - i->position;
+						
+						
+						//	Create a new thread for the callback function of this element, if it does not exist yet
 						const String callbackThreadName = "Graphics Callback " + String((uint32) i);
 						CMOS& cmos = CMOS::get();
 						if(cmos.thread_doesExist(callbackThreadName) == false)

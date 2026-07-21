@@ -20,5 +20,4 @@ namespace Charts
 #include "directory.hpp"
 /*#include "inputBox.hpp"
 #include "buttonFragmented.hpp"*/
-#include "pageSwitchButton.hpp"
 #include "upDownButton.hpp"
