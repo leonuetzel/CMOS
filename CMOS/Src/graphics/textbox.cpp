@@ -63,7 +63,7 @@ CODE_RAM void Textbox::onCallback(Element& element)
 	
 	
 	//	Save position of first touch contact so that we can later decide, if the user wanted to scroll or select a line
-	if(m_touchEvent != Graphics::e_touchEvent::TOUCH)
+	if(m_touchEvent != I_TouchController::e_touchEvent::TOUCH)
 	{
 		return;
 	}
@@ -73,7 +73,7 @@ CODE_RAM void Textbox::onCallback(Element& element)
 	//	Scrolling animation
 	bool isScrolling = false;
 	const uint32 scrollingInPixelsAtStart = textbox.m_scrollingInPixels;
-	while(m_touchEvent != Graphics::e_touchEvent::RELEASE)
+	while(m_touchEvent != I_TouchController::e_touchEvent::RELEASE)
 	{
 		const Vec2 touchPositionNow = textbox.m_touchPosition;
 		

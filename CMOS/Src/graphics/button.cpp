@@ -64,9 +64,9 @@ CODE_RAM void Button::onCallback(Element& element)
 	CMOS& cmos = CMOS::get();
 	
 	uint32 counter_ms = 0;
-	while(m_touchEvent != Graphics::e_touchEvent::RELEASE)
+	while(m_touchEvent != I_TouchController::e_touchEvent::RELEASE)
 	{
-		if(m_touchEvent == Graphics::e_touchEvent::TOUCH)
+		if(m_touchEvent == I_TouchController::e_touchEvent::TOUCH)
 		{
 			button.m_isPressed = true;
 			button.requestRebuild();

@@ -113,7 +113,7 @@ class Element	:	protected Rect
 		
 		//	Touch Related
 		Vec2 m_touchPosition;
-		static Graphics::e_touchEvent m_touchEvent;
+		static I_TouchController::e_touchEvent m_touchEvent;
 		bool m_touchValid;
 		
 		
@@ -156,7 +156,7 @@ class Element	:	protected Rect
 		constexpr inline bool get_visibility() const;
 		constexpr inline bool get_touchability() const;
 		constexpr inline uint32 get_updatePeriodInFrames() const;
-		inline Graphics::e_touchEvent get_touchEvent() const;
+		inline I_TouchController::e_touchEvent get_touchEvent() const;
 		constexpr inline Vec2 get_touchPosition() const;
 		constexpr inline bool get_touchValid() const;
 		Vec2 get_align(e_align align, const String& string, const Font& font, int16 distanceFromBorder);
@@ -364,7 +364,7 @@ constexpr inline uint32 Element::get_updatePeriodInFrames() const
 }
 
 
-inline Graphics::e_touchEvent Element::get_touchEvent() const
+inline I_TouchController::e_touchEvent Element::get_touchEvent() const
 {
 	return(m_touchEvent);
 }

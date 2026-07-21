@@ -344,9 +344,9 @@ void Graphics::eraseAllElements()
 
 
 
-void Graphics::register_touchData(Vec2 touchPoint, e_touchEvent touchEvent)
+void Graphics::register_touchData(Vec2 touchPoint, I_TouchController::e_touchEvent touchEvent)
 {
-	if(touchEvent != e_touchEvent::INVALID)
+	if(touchEvent != I_TouchController::e_touchEvent::INVALID)
 	{
 		//	Make the new touch event visible to all elements
 		Element::m_touchEvent = touchEvent;

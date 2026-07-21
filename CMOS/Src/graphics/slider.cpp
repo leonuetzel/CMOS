@@ -71,7 +71,7 @@ CODE_RAM void Slider::onCallback(Element& element)
 	CMOS& cmos = CMOS::get();
 	
 	bool firstTimeCalculated = false;
-	while(m_touchEvent != Graphics::e_touchEvent::RELEASE || firstTimeCalculated == false)
+	while(m_touchEvent != I_TouchController::e_touchEvent::RELEASE || firstTimeCalculated == false)
 	{
 		firstTimeCalculated = true;
 		uint8 percent = slider.calculatePercentage();

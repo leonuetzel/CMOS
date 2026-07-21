@@ -19,6 +19,7 @@
 
 #include "graphics/i_displayDriver.hpp"
 #include "graphics/i_graphicAccelerator.hpp"
+#include "graphics/i_touchController.hpp"
 
 #include "i_can.hpp"
 #include "i_crc.hpp"
@@ -90,10 +91,12 @@
 #include "icd/ad5175.hpp"
 #include "icd/bq25887.hpp"
 #include "icd/dp83825i.hpp"
+#include "icd/ft5426g.hpp"
+#include "icd/ft5536u.hpp"
 #include "icd/mb85rc16.hpp"
-#include "icd/mcp23016.hpp"
 #include "icd/mcp3427.hpp"
 #include "icd/mcp3428.hpp"
+#include "icd/mcp23016.hpp"
 #include "icd/stc3100.hpp"
 
 

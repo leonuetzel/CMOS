@@ -17,13 +17,7 @@ class Graphics
 {
 	public:
 		
-		enum class e_touchEvent: uint8
-		{
-			INVALID		= 0,
-			TOUCH			= 1,
-			CONTACT		= 2,
-			RELEASE		= 3
-		};
+		
 		
 		
 		
@@ -97,7 +91,7 @@ class Graphics
 		inline Array<Element*> listElements() const;
 		void eraseAllElements();
 		
-		void register_touchData(Vec2 touchPoint, e_touchEvent touchEvent);
+		void register_touchData(Vec2 touchPoint, I_TouchController::e_touchEvent touchEvent);
 		
 		Graphics& operator+=(Element& element);
 		Graphics& operator-=(Element& element);

@@ -8,8 +8,8 @@
 /*                    Globals and Static Initialization					 						 */
 /*****************************************************************************/
 
-I_GraphicAccelerator* 	Element::m_graphicAccelerator;
-Graphics::e_touchEvent	Element::m_touchEvent;
+I_GraphicAccelerator* Element::m_graphicAccelerator;
+I_TouchController::e_touchEvent Element::m_touchEvent;
 
 
 
