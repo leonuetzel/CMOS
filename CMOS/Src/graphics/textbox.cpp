@@ -325,6 +325,7 @@ Textbox::Textbox(Element element, const Font& font)
 	Element::set_function_onCallback(onCallback);
 	Element::set_function_onChangeMyPage(onChangeMyPage);
 	Element::set_function_onChangeShape(onChangeShape);
+	Element::set_function_onChangeCurrentPage(onChangeCurrentPage);
 }
 
 
