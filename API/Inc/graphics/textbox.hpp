@@ -255,6 +255,12 @@ constexpr inline void Textbox::set_function_onChangeShape(f_element onChangeShap
 }
 
 
+constexpr inline void Textbox::set_function_onChangeCurrentPage(f_element onChangeCurrentPageFunction)
+{
+	m_function_onChangeCurrentPage = onChangeCurrentPageFunction;
+}
+
+
 constexpr inline Element::f_element Textbox::get_function_onUpdate() const
 {
 	return(m_function_onUpdate);
@@ -276,6 +282,12 @@ constexpr inline Element::f_element Textbox::get_function_onChangeMyPage() const
 constexpr inline Element::f_element Textbox::get_function_onChangeShape() const
 {
 	return(m_function_onChangeShape);
+}
+
+
+constexpr inline Element::f_element Textbox::get_function_onChangeCurrentPage() const
+{
+	return(m_function_onChangeCurrentPage);
 }
 
 
@@ -336,6 +348,12 @@ inline Color Textbox::get_colorLine(uint32 lineNumber) const
 inline Color Textbox::get_colorLineTouched(uint32 lineNumber) const
 {
 	return(m_lines[lineNumber].colorLineTouched);
+}
+
+
+inline int16 Textbox::get_xOffset(uint32 lineNumber) const
+{
+	return(m_lines[lineNumber].xOffset);
 }
 
 
