@@ -227,6 +227,12 @@ CODE_RAM void Textbox::onChangeShape(Element& element)
 }
 
 
+CODE_RAM void Textbox::onChangeCurrentPage(Element& element)
+{
+	
+}
+
+
 
 /*****************************************************************************/
 /*                      					Protected	  			 						 						 */
