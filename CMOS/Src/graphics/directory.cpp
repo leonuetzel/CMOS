@@ -168,13 +168,31 @@ CODE_RAM void Directory::onCallback(Element& element)
 
 CODE_RAM void Directory::onChangeMyPage(Element& element)
 {
-	
+	Directory& directory = (Directory&) element;
+	if(directory.m_function_onChangeMyPage != nullptr)
+	{
+		directory.m_function_onChangeMyPage(element);
+	}
 }
 
 
 CODE_RAM void Directory::onChangeShape(Element& element)
 {
-	
+	Directory& directory = (Directory&) element;
+	if(directory.m_function_onChangeShape != nullptr)
+	{
+		directory.m_function_onChangeShape(element);
+	}
+}
+
+
+CODE_RAM void Directory::onChangeCurrentPage(Element& element)
+{
+	Directory& directory = (Directory&) element;
+	if(directory.m_function_onChangeCurrentPage != nullptr)
+	{
+		directory.m_function_onChangeCurrentPage(element);
+	}
 }
 
 

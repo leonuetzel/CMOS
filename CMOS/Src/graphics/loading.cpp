@@ -86,13 +86,31 @@ CODE_RAM void Loading::onCallback(Element& element)
 
 CODE_RAM void Loading::onChangeMyPage(Element& element)
 {
-	
+	Loading& loading = (Loading&) element;
+	if(loading.m_function_onChangeMyPage != nullptr)
+	{
+		loading.m_function_onChangeMyPage(element);
+	}
 }
 
 
 CODE_RAM void Loading::onChangeShape(Element& element)
 {
-	
+	Loading& loading = (Loading&) element;
+	if(loading.m_function_onChangeShape != nullptr)
+	{
+		loading.m_function_onChangeShape(element);
+	}
+}
+
+
+CODE_RAM void Loading::onChangeCurrentPage(Element& element)
+{
+	Loading& loading = (Loading&) element;
+	if(loading.m_function_onChangeCurrentPage != nullptr)
+	{
+		loading.m_function_onChangeCurrentPage(element);
+	}
 }
 
 

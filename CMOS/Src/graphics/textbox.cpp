@@ -213,7 +213,11 @@ CODE_RAM void Textbox::onCallback(Element& element)
 
 CODE_RAM void Textbox::onChangeMyPage(Element& element)
 {
-	
+	Textbox& textbox = (Textbox&) element;
+	if(textbox.m_function_onChangeMyPage != nullptr)
+	{
+		textbox.m_function_onChangeMyPage(element);
+	}
 }
 
 
@@ -224,12 +228,22 @@ CODE_RAM void Textbox::onChangeShape(Element& element)
 	
 	//	Rebuild the whole textbox
 	textbox.requestRebuild();
+	
+	
+	if(textbox.m_function_onChangeShape != nullptr)
+	{
+		textbox.m_function_onChangeShape(element);
+	}
 }
 
 
 CODE_RAM void Textbox::onChangeCurrentPage(Element& element)
 {
-	
+	Textbox& textbox = (Textbox&) element;
+	if(textbox.m_function_onChangeCurrentPage != nullptr)
+	{
+		textbox.m_function_onChangeCurrentPage(element);
+	}
 }
 
 

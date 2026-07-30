@@ -108,7 +108,6 @@ CODE_RAM void Button::onCallback(Element& element)
 CODE_RAM void Button::onChangeMyPage(Element& element)
 {
 	Button& button = (Button&) element;
-	
 	if(button.m_function_onChangeMyPage != nullptr)
 	{
 		button.m_function_onChangeMyPage(element);
@@ -119,7 +118,6 @@ CODE_RAM void Button::onChangeMyPage(Element& element)
 CODE_RAM void Button::onChangeShape(Element& element)
 {
 	Button& button = (Button&) element;
-	
 	if(button.m_function_onChangeShape != nullptr)
 	{
 		button.m_function_onChangeShape(element);
@@ -130,7 +128,6 @@ CODE_RAM void Button::onChangeShape(Element& element)
 CODE_RAM void Button::onChangeCurrentPage(Element& element)
 {
 	Button& button = (Button&) element;
-	
 	if(button.m_function_onChangeCurrentPage != nullptr)
 	{
 		button.m_function_onChangeCurrentPage(element);

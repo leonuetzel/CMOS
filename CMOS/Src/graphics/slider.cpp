@@ -106,13 +106,31 @@ CODE_RAM void Slider::onCallback(Element& element)
 
 CODE_RAM void Slider::onChangeMyPage(Element& element)
 {
-	
+	Slider& slider = (Slider&) element;
+	if(slider.m_function_onChangeMyPage != nullptr)
+	{
+		slider.m_function_onChangeMyPage(element);
+	}
 }
 
 
 CODE_RAM void Slider::onChangeShape(Element& element)
 {
-	
+	Slider& slider = (Slider&) element;
+	if(slider.m_function_onChangeShape != nullptr)
+	{
+		slider.m_function_onChangeShape(element);
+	}
+}
+
+
+CODE_RAM void Slider::onChangeCurrentPage(Element& element)
+{
+	Slider& slider = (Slider&) element;
+	if(slider.m_function_onChangeCurrentPage != nullptr)
+	{
+		slider.m_function_onChangeCurrentPage(element);
+	}
 }
 
 
