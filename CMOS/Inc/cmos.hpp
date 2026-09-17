@@ -39,7 +39,8 @@
 #include "uart.hpp"
 
 
-//	Software DMA
+//	Software Implementations of Interfaces
+#include "crcSoftware.hpp"
 #include "dmaSoftware.hpp"
 
 
@@ -269,6 +270,7 @@ class CMOS
 			friend void EXCEPTION_USAGE_FAULT();
 		#endif
 		friend void EXCEPTION_HARD_FAULT();
+		friend void EXCEPTION_NMI();
 		friend void EXCEPTION_SYSTICK();
 		friend void EXCEPTION_SVC();
 		friend void EXCEPTION_PENDING_SV();

@@ -1122,6 +1122,12 @@ void EXCEPTION_HARD_FAULT()
 }
 
 
+void EXCEPTION_NMI()
+{
+	CMOS::c_this->reset();
+}
+
+
 CODE_RAM void EXCEPTION_SYSTICK()
 {
 	#if defined(CORTEX_M3) || defined(CORTEX_M4) || defined(CORTEX_M7)
